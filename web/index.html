@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CV Tailor</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="engine-banner" class="banner hidden"></div>
+
+  <header>
+    <h1>CV Tailor</h1>
+    <p class="sub">Tailor your CV to any job. Powered by your Claude subscription.</p>
+  </header>
+
+  <section id="step-input" class="card">
+    <h2>1. Your details</h2>
+    <label>Your current CV (paste text)</label>
+    <textarea id="cv" rows="10" placeholder="Paste your CV here"></textarea>
+
+    <label>Job posting URL</label>
+    <div class="row">
+      <input id="url" type="text" placeholder="https://..." />
+      <button id="fetch-btn" class="secondary">Fetch JD</button>
+    </div>
+
+    <label>Job description (auto filled, or paste manually)</label>
+    <textarea id="jd" rows="8" placeholder="Job description text"></textarea>
+
+    <button id="generate-btn" class="primary">Generate tailored CV</button>
+  </section>
+
+  <section id="step-result" class="card hidden">
+    <h2>2. Draft and ATS score</h2>
+    <div id="score-box"></div>
+    <p class="note">The ATS score is a transparent estimate based on how well
+      your CV matches the job keywords and formatting. It is not an official
+      score from any employer system.</p>
+    <textarea id="draft" rows="16"></textarea>
+
+    <label>Comments or changes (optional)</label>
+    <textarea id="feedback" rows="3" placeholder="e.g. emphasize leadership, shorten summary"></textarea>
+
+    <div class="row">
+      <button id="regen-btn" class="secondary">Regenerate with my feedback</button>
+      <button id="export-btn" class="primary">Approve and export PDF</button>
+    </div>
+    <div id="export-msg" class="note"></div>
+  </section>
+
+  <div id="overlay" class="overlay hidden"><div class="spinner"></div><p id="overlay-msg">Working...</p></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
