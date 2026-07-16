@@ -9,6 +9,8 @@ STOPWORDS: set[str] = {
     "us", "them", "who", "which", "will", "would", "can", "could", "should",
     "has", "have", "had", "do", "does", "did", "not", "no", "so", "if",
     "than", "then", "there", "here", "up", "out", "over", "into", "about",
+    "seeking", "looking", "want", "need", "required", "must", "prefer",
+    "ability", "work", "team", "company", "role", "position", "job",
 }
 
 _DASH_CLASS = "[\\-–—]"
