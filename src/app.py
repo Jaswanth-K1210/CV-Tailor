@@ -17,6 +17,8 @@ try:
 except ImportError:
     pass
 
+_generation_count = 0
+
 
 class Api:
     def check_engine(self) -> dict:
@@ -32,24 +34,24 @@ class Api:
         return {"ok": True, "engines": available_engines()}
 
     def get_settings(self) -> dict:
+        global _generation_count
         cfg = settings.load()
         engine_name = cfg.get("engine", "claude")
+        max_gen = cfg.get("max_generations", 6)
         return {
             "ok": True,
             "engine": engine_name,
             "model": cfg.get("model", DEFAULT_MODELS.get(engine_name, "")),
-            "budget_usd": cfg.get("budget_usd", 0.10),
             "engine_label": ENGINE_LABELS.get(engine_name, engine_name),
             "default_model": DEFAULT_MODELS.get(engine_name, ""),
+            "max_generations": max_gen,
+            "generations_used": _generation_count,
+            "generations_left": max(0, max_gen - _generation_count),
         }
 
-    def save_settings(self, engine: str, model: str, budget_usd: float) -> dict:
+    def save_settings(self, engine: str, model: str) -> dict:
         try:
-            settings.save({
-                "engine": engine,
-                "model": model,
-                "budget_usd": budget_usd,
-            })
+            settings.save({"engine": engine, "model": model})
             return {"ok": True}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
@@ -69,6 +71,15 @@ class Api:
             return {"ok": False, "error": str(exc)}
 
     def generate(self, cv: str, jd: str, feedback: str, previous: str) -> dict:
+        global _generation_count
+        cfg = settings.load()
+        max_gen = cfg.get("max_generations", 6)
+        if _generation_count >= max_gen:
+            return {
+                "ok": False,
+                "error": f"Usage limit reached ({max_gen} generations). "
+                         f"Restart the app to reset the counter.",
+            }
         if not cv.strip() or not jd.strip():
             return {"ok": False, "error": "Both CV and job description are required."}
         keywords = set(ats_scorer.extract_keywords(jd))
@@ -88,9 +99,12 @@ class Api:
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
+        _generation_count += result.get("attempts", 1)
         result["repeated_words"] = sanitizer.find_repeated_words(
             result["cv"], protected=keywords)
         result["ok"] = True
+        result["generations_used"] = _generation_count
+        result["generations_left"] = max(0, max_gen - _generation_count)
         return result
 
     def external_score(self, cv: str, jd: str) -> dict:

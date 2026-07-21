@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import platform
 import shutil
+import subprocess
 from abc import ABC, abstractmethod
 
 
@@ -22,8 +23,39 @@ class Engine(ABC):
         """Return CLI args to get version info."""
 
     @abstractmethod
-    def _generate_args(self, model: str, budget_usd: float) -> list[str]:
+    def _generate_args(self, model: str) -> list[str]:
         """Return CLI args for headless generation (prompt goes via stdin)."""
+
+    def _extra_paths(self) -> list[str]:
+        """Paths derived from the user's shell even if pywebview has a窄 PATH."""
+        paths = []
+        home = os.path.expanduser("~")
+        for sub in (
+            ".npm-global/bin",
+            ".local/bin",
+            "node_modules/.bin",
+        ):
+            paths.append(os.path.join(home, sub))
+        for prefix in ("/usr/local/bin", "/opt/homebrew/bin"):
+            if prefix not in paths:
+                paths.append(prefix)
+        return paths
+
+    def _shell_which(self, name: str) -> str | None:
+        """Try `which` via the user's login shell to inherit the full PATH."""
+        try:
+            shell = os.environ.get("SHELL", "/bin/zsh")
+            r = subprocess.run(
+                [shell, "-l", "-c", f"which {name}"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if r.returncode == 0:
+                path = r.stdout.strip()
+                if path and os.path.isfile(path):
+                    return path
+        except Exception:
+            pass
+        return None
 
     def find_binary(self) -> str | None:
         system = platform.system()
@@ -31,10 +63,14 @@ class Engine(ABC):
             path = shutil.which(name)
             if path:
                 return path
-        for path in self._search_paths():
-            candidates = [path]
+        for name in self._binary_names():
+            path = self._shell_which(name)
+            if path:
+                return path
+        for base_path in self._search_paths() + self._extra_paths():
+            candidates = [base_path]
             if system == "Windows":
-                candidates.append(path + ".exe")
+                candidates.append(base_path + ".exe")
             for candidate in candidates:
                 if os.path.isfile(candidate):
                     return candidate
@@ -45,7 +81,6 @@ class Engine(ABC):
         if not binary:
             return {"ok": False, "error": f"{self.name} CLI not found"}
         try:
-            import subprocess
             r = subprocess.run(
                 [binary] + self._version_args(),
                 capture_output=True, text=True, timeout=15,
@@ -55,13 +90,11 @@ class Engine(ABC):
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
-    def generate(self, prompt: str, model: str, budget_usd: float,
-                 timeout: int = 120) -> str:
-        import subprocess
+    def generate(self, prompt: str, model: str, timeout: int = 120) -> str:
         binary = self.find_binary()
         if not binary:
             raise RuntimeError(f"{self.name} CLI not found")
-        args = [binary] + self._generate_args(model, budget_usd)
+        args = [binary] + self._generate_args(model)
         result = subprocess.run(
             args, input=prompt, capture_output=True, text=True, timeout=timeout,
         )

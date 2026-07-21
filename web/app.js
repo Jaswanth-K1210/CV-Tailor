@@ -15,13 +15,21 @@ async function api(name, ...args) {
   return result;
 }
 
+function updateUsage(used, left, max) {
+  const pill = $("usage-pill");
+  pill.textContent = used + " / " + max + " generations";
+  pill.classList.remove("warn", "empty");
+  if (left <= 0) pill.classList.add("empty");
+  else if (left <= 2) pill.classList.add("warn");
+}
+
 async function loadSettings() {
   const r = await api("get_settings");
   if (!r.ok) return;
   selectedEngine = r.engine;
   $("settings-model").value = r.model;
-  $("settings-budget").value = r.budget_usd;
   $("engine-badge").textContent = r.engine_label + " \u00B7 " + r.model;
+  updateUsage(r.generations_used, r.generations_left, r.max_generations);
 }
 
 async function loadEngines() {
@@ -62,8 +70,7 @@ function closeSettings() {
 
 async function saveSettings() {
   const model = $("settings-model").value.trim();
-  const budget = parseFloat($("settings-budget").value) || 0.10;
-  const r = await api("save_settings", selectedEngine, model, budget);
+  const r = await api("save_settings", selectedEngine, model);
   if (r.ok) {
     const engLabel = { claude: "Claude Code", gemini: "Gemini CLI", codex: "Codex CLI" };
     $("engine-badge").textContent = (engLabel[selectedEngine] || selectedEngine) + " \u00B7 " + model;
@@ -100,6 +107,13 @@ function renderScore(r) {
   $("score-box").innerHTML = html;
 }
 
+function handleGenerationResult(r) {
+  if (r.generations_used !== undefined) {
+    const cfg = { max_generations: 6 };
+    updateUsage(r.generations_used, r.generations_left, cfg.max_generations);
+  }
+}
+
 async function runGenerate(feedback) {
   const cv = $("cv").value, jd = $("jd").value;
   showOverlay("Generating and scoring\u2026 this runs a few passes to reach 85+");
@@ -109,6 +123,7 @@ async function runGenerate(feedback) {
   lastDraft = r.cv;
   $("draft").value = r.cv;
   renderScore(r);
+  handleGenerationResult(r);
   $("step-result").classList.remove("hidden");
   $("step-result").scrollIntoView({ behavior: "smooth" });
   showOverlay("Running external ATS scorer for validation\u2026");

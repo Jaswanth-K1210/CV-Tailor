@@ -16,11 +16,10 @@ class Engine(Engine):
         home = os.path.expanduser("~")
         if platform.system() == "Windows":
             local = os.environ.get("LOCALAPPDATA", "")
-            return [
-                os.path.join(local, "gemini", "gemini.exe"),
-            ]
+            return [os.path.join(local, "gemini", "gemini.exe")]
         return [
             "/usr/local/bin/gemini",
+            "/opt/homebrew/bin/gemini",
             os.path.join(home, ".local", "bin", "gemini"),
             os.path.join(home, ".npm-global", "bin", "gemini"),
         ]
@@ -28,5 +27,5 @@ class Engine(Engine):
     def _version_args(self) -> list[str]:
         return ["--version"]
 
-    def _generate_args(self, model: str, budget_usd: float) -> list[str]:
+    def _generate_args(self, model: str) -> list[str]:
         return ["-p", "-m", model]

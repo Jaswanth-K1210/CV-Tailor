@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 _DIR = Path.home() / ".cv-tailor"
@@ -10,7 +9,7 @@ _FILE = _DIR / "settings.json"
 _DEFAULTS = {
     "engine": "claude",
     "model": "sonnet",
-    "budget_usd": 0.10,
+    "max_generations": 6,
 }
 
 

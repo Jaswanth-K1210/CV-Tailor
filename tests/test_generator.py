@@ -33,7 +33,7 @@ class _FakeSettings:
 
 def test_generate_cv_returns_engine_output(monkeypatch):
     class FakeEngine:
-        def generate(self, prompt, model, budget, timeout=120):
+        def generate(self, prompt, model, timeout=120):
             return "Generated CV text"
 
     monkeypatch.setattr("src.generator.get_engine", lambda name: FakeEngine())
@@ -43,7 +43,7 @@ def test_generate_cv_returns_engine_output(monkeypatch):
 
 def test_generate_cv_raises_on_engine_error(monkeypatch):
     class FakeEngine:
-        def generate(self, prompt, model, budget, timeout=120):
+        def generate(self, prompt, model, timeout=120):
             raise RuntimeError("not logged in")
 
     monkeypatch.setattr("src.generator.get_engine", lambda name: FakeEngine())

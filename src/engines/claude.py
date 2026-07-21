@@ -16,9 +16,7 @@ class Engine(Engine):
         home = os.path.expanduser("~")
         if platform.system() == "Windows":
             local = os.environ.get("LOCALAPPDATA", "")
-            return [
-                os.path.join(local, "claude", "claude.exe"),
-            ]
+            return [os.path.join(local, "claude", "claude.exe")]
         return [
             "/usr/local/bin/claude",
             os.path.join(home, ".local", "bin", "claude"),
@@ -28,8 +26,5 @@ class Engine(Engine):
     def _version_args(self) -> list[str]:
         return ["--version"]
 
-    def _generate_args(self, model: str, budget_usd: float) -> list[str]:
-        args = ["-p", "--model", model]
-        if budget_usd > 0:
-            args += ["--max-budget-usd", str(budget_usd)]
-        return args
+    def _generate_args(self, model: str) -> list[str]:
+        return ["-p", "--model", model]

@@ -33,6 +33,7 @@ header {
   margin-bottom: 24px;
 }
 .header-left { display: flex; align-items: center; gap: 14px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
 h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
 
 .engine-badge {
@@ -53,6 +54,21 @@ h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
   border-radius: 50%;
   background: var(--accent);
 }
+
+.usage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(52,211,153,.1);
+  color: var(--good);
+  border: 1px solid rgba(52,211,153,.2);
+}
+.usage-pill.warn { background: rgba(251,191,36,.1); color: var(--warn); border-color: rgba(251,191,36,.2); }
+.usage-pill.empty { background: rgba(248,113,113,.1); color: var(--bad); border-color: rgba(248,113,113,.2); }
 
 .icon-btn {
   background: none;

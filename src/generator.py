@@ -1,5 +1,5 @@
-import os
-import shutil
+from __future__ import annotations
+
 import subprocess
 
 from src.engines import get_engine, ENGINE_LABELS, DEFAULT_MODELS
@@ -40,13 +40,12 @@ def generate_cv(source_cv: str, jd: str, feedback: str = "",
     cfg = settings.load()
     engine_name = cfg.get("engine", "claude")
     model = cfg.get("model", DEFAULT_MODELS.get(engine_name, "sonnet"))
-    budget = cfg.get("budget_usd", 0.10)
     try:
         engine = get_engine(engine_name)
     except ValueError as exc:
         raise EngineError(str(exc)) from exc
     try:
-        return engine.generate(prompt, model, budget, timeout=timeout)
+        return engine.generate(prompt, model, timeout=timeout)
     except FileNotFoundError as exc:
         raise EngineError(
             f"{ENGINE_LABELS.get(engine_name, engine_name)} CLI not found. "
