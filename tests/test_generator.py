@@ -1,5 +1,3 @@
-import subprocess
-
 import pytest
 
 from src.generator import build_prompt, generate_cv, EngineError
@@ -15,7 +13,7 @@ def test_build_prompt_includes_all_rules_and_inputs():
     assert "kubernetes" in p and "aws" in p
     low = p.lower()
     assert "no dash" in low or "do not use dash" in low
-    assert "ats" in low
+    assert "jd keywords" in low
     assert "repeat" in low
 
 
@@ -24,31 +22,41 @@ def test_build_prompt_minimal_no_optional_sections():
     assert "CV" in p and "JD" in p
 
 
-def test_generate_cv_returns_stripped_stdout(monkeypatch):
-    class FakeCompleted:
-        returncode = 0
-        stdout = "  Generated CV text  "
-        stderr = ""
+_FAKE_SETTINGS = {"engine": "claude", "model": "sonnet", "budget_usd": 0.10}
 
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: FakeCompleted())
+
+class _FakeSettings:
+    @staticmethod
+    def load():
+        return dict(_FAKE_SETTINGS)
+
+
+def test_generate_cv_returns_engine_output(monkeypatch):
+    class FakeEngine:
+        def generate(self, prompt, model, budget, timeout=120):
+            return "Generated CV text"
+
+    monkeypatch.setattr("src.generator.get_engine", lambda name: FakeEngine())
+    monkeypatch.setattr("src.generator.settings", _FakeSettings())
     assert generate_cv("CV", "JD") == "Generated CV text"
 
 
-def test_generate_cv_raises_on_nonzero_exit(monkeypatch):
-    class FakeCompleted:
-        returncode = 1
-        stdout = ""
-        stderr = "not logged in"
+def test_generate_cv_raises_on_engine_error(monkeypatch):
+    class FakeEngine:
+        def generate(self, prompt, model, budget, timeout=120):
+            raise RuntimeError("not logged in")
 
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: FakeCompleted())
+    monkeypatch.setattr("src.generator.get_engine", lambda name: FakeEngine())
+    monkeypatch.setattr("src.generator.settings", _FakeSettings())
     with pytest.raises(EngineError):
         generate_cv("CV", "JD")
 
 
-def test_generate_cv_raises_when_claude_missing(monkeypatch):
-    def boom(*a, **k):
-        raise FileNotFoundError()
+def test_generate_cv_raises_when_engine_missing(monkeypatch):
+    def boom(name):
+        raise ValueError("Unknown engine: nope")
 
-    monkeypatch.setattr(subprocess, "run", boom)
+    monkeypatch.setattr("src.generator.get_engine", boom)
+    monkeypatch.setattr("src.generator.settings", _FakeSettings())
     with pytest.raises(EngineError):
         generate_cv("CV", "JD")

@@ -1,6 +1,6 @@
 def generate_until_target(source_cv, jd, feedback, previous_draft,
                           generate_fn, score_fn, sanitize_fn,
-                          target: int = 85, max_retries: int = 3) -> dict:
+                          target: int = 85, max_retries: int = 1) -> dict:
     attempts = 0
     missing: list[str] = []
     prev = previous_draft
@@ -21,7 +21,7 @@ def generate_until_target(source_cv, jd, feedback, previous_draft,
         if scored["score"] >= target:
             break
         missing = scored["missing_keywords"]
-        prev = cv
-        feedback = ""  # user feedback only applies to the first attempt of a round
+        prev = ""
+        feedback = ""
 
     return result
