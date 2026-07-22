@@ -43,6 +43,7 @@ def test_retries_until_target_then_stops():
         generate_fn=generate_fn,
         score_fn=_score_fn_factory([70, 80, 88]),
         sanitize_fn=lambda c: c,
+        max_retries=1,
     )
     assert result["score"] == 80
     assert result["attempts"] == 2

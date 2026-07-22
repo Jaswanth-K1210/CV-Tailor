@@ -28,7 +28,10 @@ class Engine(Engine):
         return ["--version"]
 
     def _generate_args(self, model: str) -> list[str]:
-        return ["-p", "-m", model]
+        # Gemini's -p/--prompt takes the prompt as its value, so it must be the
+        # last flag before the prompt (which base appends). Order matters:
+        # `gemini -m <model> -p "<prompt>"`.
+        return ["-m", model, "-p"]
 
     def _send_prompt_via_stdin(self) -> bool:
         return False

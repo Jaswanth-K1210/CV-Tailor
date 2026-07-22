@@ -11,6 +11,7 @@ ENGINE_MAP: dict[str, str] = {
     "gemini": "src.engines.gemini",
     "codex": "src.engines.codex",
     "opencode": "src.engines.opencode",
+    "ollama": "src.engines.ollama",
 }
 
 ENGINE_LABELS: dict[str, str] = {
@@ -18,13 +19,18 @@ ENGINE_LABELS: dict[str, str] = {
     "gemini": "Gemini CLI",
     "codex": "Codex CLI",
     "opencode": "OpenCode",
+    "ollama": "Ollama (local)",
 }
 
 DEFAULT_MODELS: dict[str, str] = {
     "claude": "sonnet",
     "gemini": "gemini-2.5-flash",
     "codex": "gpt-5.4",
-    "opencode": "anthropic/claude-sonnet-4-20250514",
+    # OpenCode ships free zen models that work without any credentials; the
+    # previous default pointed at an Anthropic model that isn't available
+    # unless the user has configured Anthropic auth, causing a server error.
+    "opencode": "opencode/deepseek-v4-flash-free",
+    "ollama": "llama3.2",
 }
 
 

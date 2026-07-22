@@ -2,9 +2,19 @@ from __future__ import annotations
 
 import os
 import platform
+import re
 import shutil
 import subprocess
+import tempfile
+import time
+import logging
 from abc import ABC, abstractmethod
+
+logger = logging.getLogger(__name__)
+
+# Strips ANSI colour/formatting escape sequences some CLIs (e.g. OpenCode) emit
+# on stdout so they don't end up in the generated CV text.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 
 class Engine(ABC):
@@ -88,21 +98,35 @@ class Engine(ABC):
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
-    def generate(self, prompt: str, model: str, timeout: int = 120) -> str:
+    def generate(self, prompt: str, model: str, timeout: int = 300) -> str:
         binary = self.find_binary()
         if not binary:
             raise RuntimeError(f"{self.name} CLI not found")
         args = [binary] + self._generate_args(model)
-        if self._send_prompt_via_stdin():
-            result = subprocess.run(
-                args, input=prompt, capture_output=True, text=True, timeout=timeout,
-            )
-        else:
+        if not self._send_prompt_via_stdin():
             args.append(prompt)
-            result = subprocess.run(
-                args, capture_output=True, text=True, timeout=timeout,
-            )
+        logger.info("running: %s (timeout=%ds)", " ".join(args[:3]), timeout)
+        t0 = time.monotonic()
+        # Run in a throwaway working directory so agentic CLIs (claude, gemini,
+        # opencode) don't pick up the current project's CLAUDE.md / config and
+        # try to use tools on it. Their own config lives in the home dir, so a
+        # neutral cwd only removes project-specific context.
+        with tempfile.TemporaryDirectory(prefix="cv-tailor-") as workdir:
+            if self._send_prompt_via_stdin():
+                result = subprocess.run(
+                    args, input=prompt, capture_output=True, text=True,
+                    timeout=timeout, cwd=workdir,
+                )
+            else:
+                result = subprocess.run(
+                    args, capture_output=True, text=True,
+                    timeout=timeout, cwd=workdir,
+                )
+        elapsed = time.monotonic() - t0
+        logger.info("engine finished in %.1fs (rc=%d)", elapsed, result.returncode)
         if result.returncode != 0:
-            err = result.stderr.strip() or "unknown error"
+            err = _ANSI_RE.sub("", result.stderr).strip() or "unknown error"
+            logger.error("engine stderr: %s", err[:500])
             raise RuntimeError(f"{self.name} failed: {err}")
-        return result.stdout.strip()
+        logger.debug("stdout length: %d chars", len(result.stdout))
+        return _ANSI_RE.sub("", result.stdout).strip()

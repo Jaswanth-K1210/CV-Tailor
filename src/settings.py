@@ -10,6 +10,7 @@ _DEFAULTS = {
     "engine": "claude",
     "model": "sonnet",
     "max_generations": 6,
+    "timeout_seconds": 300,
 }
 
 

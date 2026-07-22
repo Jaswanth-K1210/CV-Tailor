@@ -10,6 +10,7 @@ from src.file_extractor import extract_text, ExtractError
 from src.orchestrator import generate_until_target
 from src.pdf_export import export_pdf
 import src.settings as settings
+from src.log import LOG_BUFFER
 
 _external_scorer_available = False
 try:
@@ -33,6 +34,9 @@ class Api:
 
     def get_engines(self) -> dict:
         return {"ok": True, "engines": available_engines()}
+
+    def get_logs(self) -> dict:
+        return {"ok": True, "logs": list(LOG_BUFFER)}
 
     def get_settings(self) -> dict:
         global _generation_count
@@ -70,6 +74,8 @@ class Api:
             return {"ok": True, "jd": jd}
         except jd_fetcher.FetchError as exc:
             return {"ok": False, "error": str(exc)}
+        except Exception as exc:
+            return {"ok": False, "error": f"unexpected error: {exc}"}
 
     def upload_cv_file(self) -> dict:
         try:

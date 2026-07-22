@@ -1,7 +1,10 @@
 import re
+import logging
 from collections import Counter
 
 from src.sanitizer import STOPWORDS, has_dashes
+
+logger = logging.getLogger(__name__)
 
 _DASH_CLASS = "[\\-\u2013\u2014]"
 
@@ -207,6 +210,9 @@ def score_cv(cv: str, jd: str) -> dict:
             notes.append("contains dashes (use 'to' instead)")
 
     final = max(0, min(100, round(total)))
+    logger.debug("score=%d  kw=%d/%d  sec=%.0f  contact=%.0f  len=%.0f  quant=%d",
+                 final, exact_matches, len(keywords), sec_score, contact_score,
+                 length_score, quant_count)
     if missing:
         notes.append("missing keywords: " + ", ".join(missing[:10]))
     return {"score": final, "missing_keywords": missing, "notes": notes}

@@ -19,7 +19,7 @@ _HEADERS = {
 }
 
 _GREENHOUSE_RE = re.compile(r"boards\.greenhouse\.io/([^/?#]+)")
-_LEVER_RE = re.compile(r"(?:jobs\.lever\.co|lever\.co)/([^/?#]+)")
+_LEVER_RE = re.compile(r"(?:jobs\.lever\.co|lever\.co)/(?:[^/?#]+/)?([^/?#]+)")
 _ASHBY_RE = re.compile(r"jobs\.ashbyhq\.com/[^/?#]+/([^/?#]+)")
 _WORKDAY_RE = re.compile(r"(?:wd5\.myworkdayjobs|myworkdayjobs\.com)/")
 
@@ -57,10 +57,15 @@ def _fetch_greenhouse(url: str) -> str:
     api_url = f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs"
     if job_id:
         api_url += f"/{job_id}"
-    resp = requests.get(api_url, headers=_HEADERS, timeout=20)
+    try:
+        resp = requests.get(api_url, headers=_HEADERS, timeout=20)
+    except requests.RequestException as exc:
+        raise FetchError(f"could not reach Greenhouse API: {exc}") from exc
     if resp.status_code != 200:
         raise FetchError(f"Greenhouse API returned status {resp.status_code}")
     data = resp.json()
+    if isinstance(data, list):
+        raise FetchError("Greenhouse API returned unexpected response format")
     if job_id and "content" in data:
         return _clean_text(data["content"])
     if "jobs" in data:
@@ -77,10 +82,15 @@ def _fetch_lever(url: str) -> str:
         raise FetchError("could not parse Lever URL")
     posting = m.group(1)
     api_url = f"https://api.lever.co/v0/postings/{posting}?mode=json"
-    resp = requests.get(api_url, headers=_HEADERS, timeout=20)
+    try:
+        resp = requests.get(api_url, headers=_HEADERS, timeout=20)
+    except requests.RequestException as exc:
+        raise FetchError(f"could not reach Lever API: {exc}") from exc
     if resp.status_code != 200:
         raise FetchError(f"Lever API returned status {resp.status_code}")
     data = resp.json()
+    if isinstance(data, list):
+        raise FetchError("Lever API returned a list; URL may not point to a specific job posting")
     desc = data.get("descriptionPlain") or data.get("description", "")
     if not desc:
         raise FetchError("no job content found in Lever response")

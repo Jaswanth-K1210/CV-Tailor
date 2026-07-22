@@ -72,7 +72,7 @@ async function saveSettings() {
   const model = $("settings-model").value.trim();
   const r = await api("save_settings", selectedEngine, model);
   if (r.ok) {
-    var labels = { claude: "Claude Code", gemini: "Gemini CLI", codex: "Codex CLI", opencode: "OpenCode" };
+    var labels = { claude: "Claude Code", gemini: "Gemini CLI", codex: "Codex CLI", opencode: "OpenCode", ollama: "Ollama (local)" };
     $("engine-badge").textContent = (labels[selectedEngine] || selectedEngine) + " \u00B7 " + model;
     closeSettings();
   }
@@ -116,8 +116,10 @@ function handleGenerationResult(r) {
 
 async function runGenerate(feedback) {
   var cv = $("cv").value, jd = $("jd").value;
-  showOverlay("Generating and scoring\u2026 this runs a few passes to reach 85+");
+  showOverlay("Generating\u2026");
+  startLogPolling();
   var r = await api("generate", cv, jd, feedback || "", lastDraft);
+  stopLogPolling();
   hideOverlay();
   if (!r.ok) { alert(r.error); return; }
   lastDraft = r.cv;
@@ -220,7 +222,9 @@ $("fetch-btn").onclick = async function() {
   var url = $("url").value.trim();
   if (!url) return;
   showOverlay("Fetching job description\u2026");
+  startLogPolling();
   var r = await api("fetch_jd", url);
+  stopLogPolling();
   hideOverlay();
   if (r.ok) { $("jd").value = r.jd; }
   else { alert(r.error + "\n\nPaste the job description manually instead."); }
@@ -238,3 +242,43 @@ $("export-btn").onclick = async function() {
   hideOverlay();
   $("export-msg").textContent = r.ok ? "Saved to " + r.path : "Error: " + r.error;
 };
+
+var logPanel = $("log-panel");
+var logOutput = $("log-output");
+var logLines = 0;
+var logPolling = null;
+
+$("log-toggle").onclick = function() {
+  logPanel.classList.toggle("hidden");
+  $("log-toggle").textContent = logPanel.classList.contains("hidden") ? "Logs" : "Hide";
+  if (!logPanel.classList.contains("hidden")) refreshLogs();
+};
+$("log-close").onclick = function() {
+  logPanel.classList.add("hidden");
+  $("log-toggle").textContent = "Logs";
+};
+
+async function refreshLogs() {
+  var r = await api("get_logs");
+  if (!r.ok) return;
+  var logs = r.logs;
+  if (logs.length > logLines) {
+    var newLines = logs.slice(logLines);
+    logOutput.textContent += newLines.join("\n") + "\n";
+    logLines = logs.length;
+    logOutput.scrollTop = logOutput.scrollHeight;
+  }
+}
+
+function startLogPolling() {
+  logLines = 0;
+  logOutput.textContent = "";
+  logPanel.classList.remove("hidden");
+  $("log-toggle").textContent = "Hide";
+  if (logPolling) clearInterval(logPolling);
+  logPolling = setInterval(refreshLogs, 800);
+}
+function stopLogPolling() {
+  if (logPolling) { clearInterval(logPolling); logPolling = null; }
+  refreshLogs();
+}
