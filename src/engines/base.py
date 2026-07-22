@@ -24,17 +24,16 @@ class Engine(ABC):
 
     @abstractmethod
     def _generate_args(self, model: str) -> list[str]:
-        """Return CLI args for headless generation (prompt goes via stdin)."""
+        """Return CLI args for headless generation."""
+
+    def _send_prompt_via_stdin(self) -> bool:
+        """Override to True if the CLI reads prompt from stdin (default: pass as arg)."""
+        return False
 
     def _extra_paths(self) -> list[str]:
-        """Paths derived from the user's shell even if pywebview has a窄 PATH."""
         paths = []
         home = os.path.expanduser("~")
-        for sub in (
-            ".npm-global/bin",
-            ".local/bin",
-            "node_modules/.bin",
-        ):
+        for sub in (".npm-global/bin", ".local/bin", "node_modules/.bin"):
             paths.append(os.path.join(home, sub))
         for prefix in ("/usr/local/bin", "/opt/homebrew/bin"):
             if prefix not in paths:
@@ -42,7 +41,6 @@ class Engine(ABC):
         return paths
 
     def _shell_which(self, name: str) -> str | None:
-        """Try `which` via the user's login shell to inherit the full PATH."""
         try:
             shell = os.environ.get("SHELL", "/bin/zsh")
             r = subprocess.run(
@@ -95,9 +93,15 @@ class Engine(ABC):
         if not binary:
             raise RuntimeError(f"{self.name} CLI not found")
         args = [binary] + self._generate_args(model)
-        result = subprocess.run(
-            args, input=prompt, capture_output=True, text=True, timeout=timeout,
-        )
+        if self._send_prompt_via_stdin():
+            result = subprocess.run(
+                args, input=prompt, capture_output=True, text=True, timeout=timeout,
+            )
+        else:
+            args.append(prompt)
+            result = subprocess.run(
+                args, capture_output=True, text=True, timeout=timeout,
+            )
         if result.returncode != 0:
             err = result.stderr.strip() or "unknown error"
             raise RuntimeError(f"{self.name} failed: {err}")

@@ -29,3 +29,6 @@ class Engine(Engine):
 
     def _generate_args(self, model: str) -> list[str]:
         return ["-p", "-m", model]
+
+    def _send_prompt_via_stdin(self) -> bool:
+        return False
