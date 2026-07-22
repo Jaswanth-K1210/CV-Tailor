@@ -24,7 +24,20 @@
 
   <section id="step-input" class="card">
     <h2><span class="step-num">1</span> Your details</h2>
-    <label>Your current CV (paste text)</label>
+    <label>Your current CV</label>
+    <div id="cv-dropzone" class="dropzone">
+      <div class="dropzone-inner">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>Drop PDF, DOCX, or TXT here</span>
+        <span class="dropzone-sub">or</span>
+        <button id="upload-btn" class="btn btn-secondary btn-sm">Browse files</button>
+      </div>
+    </div>
+    <div id="cv-file-info" class="file-info hidden">
+      <span id="cv-filename"></span>
+      <button id="cv-clear" class="icon-btn icon-btn-sm" title="Remove file">&times;</button>
+    </div>
+    <label>Your CV (paste text, or use upload above)</label>
     <textarea id="cv" rows="10" placeholder="Paste your CV here..."></textarea>
 
     <label>Job posting URL</label>

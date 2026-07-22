@@ -72,8 +72,8 @@ async function saveSettings() {
   const model = $("settings-model").value.trim();
   const r = await api("save_settings", selectedEngine, model);
   if (r.ok) {
-    const engLabel = { claude: "Claude Code", gemini: "Gemini CLI", codex: "Codex CLI" };
-    $("engine-badge").textContent = (engLabel[selectedEngine] || selectedEngine) + " \u00B7 " + model;
+    var labels = { claude: "Claude Code", gemini: "Gemini CLI", codex: "Codex CLI", opencode: "OpenCode" };
+    $("engine-badge").textContent = (labels[selectedEngine] || selectedEngine) + " \u00B7 " + model;
     closeSettings();
   }
 }
@@ -93,8 +93,8 @@ async function testEngine() {
 }
 
 function renderScore(r) {
-  const color = r.score >= 85 ? "var(--good)" : "var(--warn)";
-  let html = '<span class="score-num" style="color:' + color + '">' + r.score + '</span> / 100 ATS match';
+  var color = r.score >= 85 ? "var(--good)" : "var(--warn)";
+  var html = '<span class="score-num" style="color:' + color + '">' + r.score + '</span> / 100 ATS match';
   if (r.missing_keywords && r.missing_keywords.length) {
     html += '<div class="note">Still missing keywords:</div>';
     html += r.missing_keywords.slice(0, 12).map(function(k) {
@@ -109,15 +109,15 @@ function renderScore(r) {
 
 function handleGenerationResult(r) {
   if (r.generations_used !== undefined) {
-    const cfg = { max_generations: 6 };
+    var cfg = { max_generations: 6 };
     updateUsage(r.generations_used, r.generations_left, cfg.max_generations);
   }
 }
 
 async function runGenerate(feedback) {
-  const cv = $("cv").value, jd = $("jd").value;
+  var cv = $("cv").value, jd = $("jd").value;
   showOverlay("Generating and scoring\u2026 this runs a few passes to reach 85+");
-  const r = await api("generate", cv, jd, feedback || "", lastDraft);
+  var r = await api("generate", cv, jd, feedback || "", lastDraft);
   hideOverlay();
   if (!r.ok) { alert(r.error); return; }
   lastDraft = r.cv;
@@ -127,7 +127,7 @@ async function runGenerate(feedback) {
   $("step-result").classList.remove("hidden");
   $("step-result").scrollIntoView({ behavior: "smooth" });
   showOverlay("Running external ATS scorer for validation\u2026");
-  const ext = await api("external_score", r.cv, jd);
+  var ext = await api("external_score", r.cv, jd);
   hideOverlay();
   if (ext.ok) {
     var extBox = $("external-score-box");
@@ -146,9 +146,61 @@ async function runGenerate(feedback) {
   }
 }
 
+async function uploadCVFile() {
+  showOverlay("Reading file\u2026");
+  var r = await api("upload_cv_file");
+  hideOverlay();
+  if (!r.ok) {
+    if (r.error !== "No file selected") alert(r.error);
+    return;
+  }
+  $("cv").value = r.cv;
+  $("cv-filename").textContent = r.filename;
+  $("cv-file-info").classList.remove("hidden");
+  $("cv-dropzone").classList.add("hidden");
+}
+
+function clearCVFile() {
+  $("cv").value = "";
+  $("cv-file-info").classList.add("hidden");
+  $("cv-dropzone").classList.remove("hidden");
+}
+
+function setupDropzone() {
+  var dz = $("cv-dropzone");
+  if (!dz) return;
+
+  dz.addEventListener("click", function(e) {
+    if (e.target.id === "upload-btn" || e.target.closest("#upload-btn")) return;
+    uploadCVFile();
+  });
+
+  dz.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    dz.classList.add("dragover");
+  });
+  dz.addEventListener("dragleave", function() {
+    dz.classList.remove("dragover");
+  });
+  dz.addEventListener("drop", function(e) {
+    e.preventDefault();
+    dz.classList.remove("dragover");
+    var files = e.dataTransfer.files;
+    if (files.length > 0) {
+      var name = files[0].name.toLowerCase();
+      if (name.match(/\.(pdf|docx?|txt|md)$/)) {
+        uploadCVFile();
+      } else {
+        alert("Unsupported file type. Use PDF, DOCX, or TXT.");
+      }
+    }
+  });
+}
+
 window.addEventListener("pywebviewready", async function() {
   await loadSettings();
-  const eng = await api("check_engine");
+  setupDropzone();
+  var eng = await api("check_engine");
   if (!eng.ok) {
     var b = $("engine-banner");
     b.textContent = "AI engine not ready. Open Settings (gear icon) to select and configure your engine.";
@@ -161,6 +213,8 @@ $("settings-close").onclick = closeSettings;
 $("settings-cancel").onclick = closeSettings;
 $("settings-save").onclick = saveSettings;
 $("test-engine-btn").onclick = testEngine;
+$("upload-btn").onclick = function(e) { e.stopPropagation(); uploadCVFile(); };
+$("cv-clear").onclick = clearCVFile;
 
 $("fetch-btn").onclick = async function() {
   var url = $("url").value.trim();

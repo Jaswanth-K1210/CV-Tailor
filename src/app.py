@@ -6,6 +6,7 @@ import webview
 
 from src import ats_scorer, generator, jd_fetcher, sanitizer
 from src.engines import get_engine, available_engines, ENGINE_LABELS, DEFAULT_MODELS
+from src.file_extractor import extract_text, ExtractError
 from src.orchestrator import generate_until_target
 from src.pdf_export import export_pdf
 import src.settings as settings
@@ -68,6 +69,32 @@ class Api:
             jd = jd_fetcher.fetch_jd(url)
             return {"ok": True, "jd": jd}
         except jd_fetcher.FetchError as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def upload_cv_file(self) -> dict:
+        try:
+            import webview as _wv
+            window = _wv.windows[0] if _wv.windows else None
+            if not window:
+                return {"ok": False, "error": "No window available"}
+            result = window.create_file_dialog(
+                _wv.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=(
+                    "CV Files (*.pdf;*.docx;*.doc;*.txt;*.md)",
+                    "PDF (*.pdf)",
+                    "Word (*.docx;*.doc)",
+                    "Text (*.txt;*.md)",
+                ),
+            )
+            if not result:
+                return {"ok": False, "error": "No file selected"}
+            file_path = result[0] if isinstance(result, (list, tuple)) else result
+            text = extract_text(file_path)
+            return {"ok": True, "cv": text, "filename": os.path.basename(file_path)}
+        except ExtractError as exc:
+            return {"ok": False, "error": str(exc)}
+        except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
     def generate(self, cv: str, jd: str, feedback: str, previous: str) -> dict:

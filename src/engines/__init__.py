@@ -10,18 +10,21 @@ ENGINE_MAP: dict[str, str] = {
     "claude": "src.engines.claude",
     "gemini": "src.engines.gemini",
     "codex": "src.engines.codex",
+    "opencode": "src.engines.opencode",
 }
 
 ENGINE_LABELS: dict[str, str] = {
     "claude": "Claude Code",
     "gemini": "Gemini CLI",
     "codex": "Codex CLI",
+    "opencode": "OpenCode",
 }
 
 DEFAULT_MODELS: dict[str, str] = {
     "claude": "sonnet",
     "gemini": "gemini-2.5-flash",
     "codex": "gpt-5.4",
+    "opencode": "anthropic/claude-sonnet-4-20250514",
 }
 
 
