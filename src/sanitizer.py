@@ -15,9 +15,19 @@ STOPWORDS: set[str] = {
 
 _DASH_CLASS = "[\\-–—]"
 
+# Genuine ranges that should read as "to". Phone numbers (e.g. 555-9876 or
+# 555-123-4567) deliberately don't match any of these, so their dashes just
+# become spaces instead of turning into "555 to 9876".
+_YEAR_RANGE = re.compile(r"\b(\d{4})\s*" + _DASH_CLASS + r"\s*(\d{4})\b")
+_YEAR_TO_PRESENT = re.compile(
+    r"\b(\d{4})\s*" + _DASH_CLASS + r"\s*(present|current|now)\b", re.IGNORECASE)
+_SMALL_RANGE = re.compile(r"\b(\d{1,2})\s*" + _DASH_CLASS + r"\s*(\d{1,2})\b")
+
 
 def remove_dashes(text: str) -> str:
-    text = re.sub(r"(\d)\s*" + _DASH_CLASS + r"\s*(\d)", r"\1 to \2", text)
+    text = _YEAR_RANGE.sub(r"\1 to \2", text)
+    text = _YEAR_TO_PRESENT.sub(lambda m: f"{m.group(1)} to {m.group(2)}", text)
+    text = _SMALL_RANGE.sub(r"\1 to \2", text)
     text = re.sub(_DASH_CLASS, " ", text)
     text = re.sub(r"[ \t]{2,}", " ", text)
     return text

@@ -13,6 +13,19 @@ def test_number_range_becomes_to():
     assert remove_dashes("managed 5-10 people") == "managed 5 to 10 people"
 
 
+def test_year_range_becomes_to():
+    assert remove_dashes("Acme Corp 2019-2024") == "Acme Corp 2019 to 2024"
+
+
+def test_year_to_present_becomes_to():
+    assert remove_dashes("DataCorp 2021-Present") == "DataCorp 2021 to Present"
+
+
+def test_phone_number_dashes_do_not_become_to():
+    assert remove_dashes("555-9876") == "555 9876"
+    assert remove_dashes("call 555-123-4567 today") == "call 555 123 4567 today"
+
+
 def test_has_dashes_detects_all_kinds():
     assert has_dashes("a-b") is True
     assert has_dashes("a–b") is True
