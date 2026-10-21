@@ -22,6 +22,7 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
         on_round=lambda r: None, max_rounds: int = 6) -> dict:
     rounds: list[dict] = []
     asked = {a["question"] for a in profile.get("user_answers", [])}
+    gaps_asked = False
     feedback, previous = "", ""
 
     for n in range(1, max_rounds + 1):
@@ -35,8 +36,11 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
         if _passes(rnd):
             break
 
+        # ponytail: one round of gap questions per run; the reviewer rewords the
+        # same question every round, so text dedupe alone isn't enough.
         new_qs = [q for q in rev["missing_from_profile"] if q not in asked]
-        if new_qs:
+        if new_qs and not gaps_asked:
+            gaps_asked = True
             asked.update(new_qs)
             answers = ask_gaps(new_qs) or {}
             for q in new_qs:

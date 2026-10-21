@@ -73,10 +73,10 @@ class _CVPDF(FPDF):
 
     def _is_bullet(self, line: str) -> bool:
         stripped = line.strip()
-        return stripped.startswith("•") or stripped.startswith("-") or stripped.startswith("*")
+        return stripped.startswith(("•", "·", "-", "*"))
 
     def _clean_bullet(self, line: str) -> str:
-        return re.sub(r"^[\s]*[•\-*]\s*", "", line.strip())
+        return re.sub(r"^[\s]*[•·\-*]\s*", "", line.strip())
 
     def _is_skill_category(self, line: str) -> bool:
         return bool(re.match(
@@ -207,12 +207,12 @@ class _CVPDF(FPDF):
 # The core Times font is latin-1 only; map common typographic characters to
 # ASCII and drop anything else (emoji, non-Latin scripts) so export never crashes.
 _ASCII_MAP = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'",
-                            "\u2019": "'", "\u2026": "..."})
+                            "\u2019": "'", "\u2026": "...", "\u2022": "\u00b7"})
 
 
 def export_pdf(cv_text: str, out_path: str) -> str:
     cv_text = cv_text.translate(_ASCII_MAP)
-    cv_text = "".join(c if c == "\u2022" or ord(c) < 256 else "" for c in cv_text)
+    cv_text = "".join(c for c in cv_text if ord(c) < 256)
     if has_dashes(cv_text):
         raise ValueError("cv_text still contains dashes; sanitize before export")
 

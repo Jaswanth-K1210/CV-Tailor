@@ -69,3 +69,11 @@ def test_skipped_gap_is_remembered():
     _, _, profile = _run([90], [gap, {"score": 9}], ask_gaps=lambda qs: {})
     assert profile["user_answers"][0]["question"] == "Django?"
     assert "skipped" in profile["user_answers"][0]["answer"]
+
+
+def test_gaps_asked_only_in_one_round():
+    asked = []
+    reviews = [{"score": 7, "missing_from_profile": ["Django?"]},
+               {"score": 7, "missing_from_profile": ["Used Django at all?"]}]
+    _run([90], reviews, ask_gaps=lambda qs: asked.extend(qs) or {})
+    assert asked == ["Django?"]

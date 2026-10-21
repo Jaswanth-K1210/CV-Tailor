@@ -65,6 +65,8 @@ def cmd_run(a) -> None:
     )
     with open(a.profile, "w", encoding="utf-8") as f:
         f.write(profile_mod.dumps(prof))
+    with open(a.output + ".rounds.json", "w", encoding="utf-8") as f:
+        json.dump(result["rounds"], f, indent=2, ensure_ascii=False)
     export_pdf(result["resume"], a.output)
     status = "target reached" if result["reached_target"] else "did not reach target"
     print(f"\n{status}: ATS {result['ats']['score']}, review {result['review']['score']:g}/10")

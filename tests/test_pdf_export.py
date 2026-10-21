@@ -36,3 +36,10 @@ def test_export_pdf_long_cv_shrinks_to_one_page(tmp_path):
     out = tmp_path / "long.pdf"
     export_pdf("ASHA RAO\nasha@x.com\n\nEXPERIENCE\n" + body, str(out))
     assert len(PdfReader(str(out)).pages) == 1
+
+
+def test_export_pdf_inline_bullet_char(tmp_path):
+    from src.pdf_export import export_pdf
+    out = tmp_path / "b.pdf"
+    export_pdf("ASHA RAO\n\nSKILLS\n  Languages: Python • Go • SQL\n  • Built X\n", str(out))
+    assert out.stat().st_size > 0
