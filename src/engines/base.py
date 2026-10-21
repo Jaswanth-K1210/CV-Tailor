@@ -99,6 +99,15 @@ class Engine(ABC):
             return {"ok": False, "error": str(exc)}
 
     def generate(self, prompt: str, model: str, timeout: int = 300) -> str:
+        # Some CLIs (seen with agy) occasionally exit 0 with no output; retry once.
+        for _ in range(2):
+            out = self._generate_once(prompt, model, timeout)
+            if out:
+                return out
+            logger.warning("%s returned an empty response", self.name)
+        raise RuntimeError(f"{self.name} returned an empty response twice")
+
+    def _generate_once(self, prompt: str, model: str, timeout: int) -> str:
         binary = self.find_binary()
         if not binary:
             raise RuntimeError(f"{self.name} CLI not found")
@@ -129,4 +138,6 @@ class Engine(ABC):
             logger.error("engine stderr: %s", err[:500])
             raise RuntimeError(f"{self.name} failed: {err}")
         logger.debug("stdout length: %d chars", len(result.stdout))
+        if not result.stdout.strip() and result.stderr.strip():
+            logger.warning("engine stderr: %s", _ANSI_RE.sub("", result.stderr).strip()[:500])
         return _ANSI_RE.sub("", result.stdout).strip()

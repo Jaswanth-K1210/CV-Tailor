@@ -77,3 +77,25 @@ def test_gaps_asked_only_in_one_round():
                {"score": 7, "missing_from_profile": ["Used Django at all?"]}]
     _run([90], reviews, ask_gaps=lambda qs: asked.extend(qs) or {})
     assert asked == ["Django?"]
+
+
+def test_failed_later_round_keeps_best_so_far():
+    import pytest
+    n = {"i": 0}
+
+    def write(profile, jd, feedback, previous):
+        n["i"] += 1
+        if n["i"] == 2:
+            raise RuntimeError("agy returned an empty response twice")
+        return "cv1"
+
+    result = run({}, "jd", write=write, ats=lambda t, j: {"score": 70, "issues": []},
+                 review=lambda p, j, r, a: {"score": 6, "issues": [], "fabrications": [],
+                                            "missing_from_profile": []},
+                 ask_gaps=lambda qs: {})
+    assert result["resume"] == "cv1"
+    assert "round 2 failed" in result["error"]
+
+    with pytest.raises(RuntimeError):
+        run({}, "jd", write=lambda *a: (_ for _ in ()).throw(RuntimeError("x")),
+            ats=None, review=None, ask_gaps=None)

@@ -24,11 +24,20 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
     asked = {a["question"] for a in profile.get("user_answers", [])}
     gaps_asked = False
     feedback, previous = "", ""
+    error = None
 
     for n in range(1, max_rounds + 1):
-        resume = write(profile, jd, feedback, previous)
-        ats_result = ats(resume, jd)
-        rev = review(profile, jd, resume, ats_result)
+        try:
+            resume = write(profile, jd, feedback, previous)
+            ats_result = ats(resume, jd)
+            rev = review(profile, jd, resume, ats_result)
+        except Exception as exc:
+            if not rounds:
+                raise
+            # Don't throw away finished rounds because a later one failed.
+            logger.exception("round %d failed; delivering best so far", n)
+            error = f"round {n} failed: {exc}"
+            break
         rnd = {"round": n, "resume": resume, "ats": ats_result, "review": rev}
         rounds.append(rnd)
         on_round(rnd)
@@ -57,4 +66,4 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
 
     best = max(rounds, key=_rank)
     return {"resume": best["resume"], "ats": best["ats"], "review": best["review"],
-            "rounds": rounds, "reached_target": _passes(best)}
+            "rounds": rounds, "reached_target": _passes(best), "error": error}

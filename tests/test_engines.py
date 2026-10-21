@@ -79,3 +79,18 @@ def test_agy_engine_args():
     assert eng._binary_names() == ["agy"]
     assert eng._generate_args("m") == ["--model", "m", "-p"]
     assert eng._send_prompt_via_stdin() is False
+
+
+def test_generate_retries_once_on_empty_output_then_raises(monkeypatch):
+    calls = []
+
+    def fake_run(args, **kw):
+        calls.append(1)
+        return _FakeCompleted(stdout="  \n", stderr="quota?")
+
+    monkeypatch.setattr("src.engines.base.subprocess.run", fake_run)
+    eng = get_engine("claude")
+    monkeypatch.setattr(eng, "find_binary", lambda: "/usr/bin/claude")
+    with pytest.raises(RuntimeError, match="empty response"):
+        eng.generate("hi", "sonnet")
+    assert len(calls) == 2
