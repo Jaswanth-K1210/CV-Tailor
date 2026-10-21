@@ -62,3 +62,10 @@ def test_gap_asked_once_and_saved_to_profile():
     assert profile["user_answers"] == [
         {"question": "Have you used Kubernetes?", "answer": "Used it at Acme", "source": "user"}]
     assert result["reached_target"] is True
+
+
+def test_skipped_gap_is_remembered():
+    gap = {"score": 7, "missing_from_profile": ["Django?"]}
+    _, _, profile = _run([90], [gap, {"score": 9}], ask_gaps=lambda qs: {})
+    assert profile["user_answers"][0]["question"] == "Django?"
+    assert "skipped" in profile["user_answers"][0]["answer"]

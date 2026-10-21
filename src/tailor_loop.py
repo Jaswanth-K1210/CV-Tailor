@@ -38,10 +38,12 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
         new_qs = [q for q in rev["missing_from_profile"] if q not in asked]
         if new_qs:
             asked.update(new_qs)
-            for q, a in (ask_gaps(new_qs) or {}).items():
-                if a and a.strip():
-                    profile.setdefault("user_answers", []).append(
-                        {"question": q, "answer": a.strip(), "source": "user"})
+            answers = ask_gaps(new_qs) or {}
+            for q in new_qs:
+                # Skipped questions are kept too so the reviewer doesn't re-ask them reworded.
+                a = (answers.get(q) or "").strip() or "(skipped, no experience to add)"
+                profile.setdefault("user_answers", []).append(
+                    {"question": q, "answer": a, "source": "user"})
 
         feedback = "\n".join(
             [f"ATS: {i}" for i in ats_result.get("issues", [])]

@@ -28,6 +28,7 @@ Score it 0-10 for how strongly it would get this candidate an interview.
 Check every claim against the PROFILE; anything not backed by it is a fabrication.
 List job requirements the PROFILE has no evidence for as missing_from_profile,
 phrased as a short question to the candidate (e.g. "Have you used Kubernetes? Where?").
+Never ask about anything already covered in PROFILE.user_answers, even reworded.
 
 Return ONLY JSON: {{"score": number, "issues": [str], "fabrications": [str],
 "missing_from_profile": [str]}}

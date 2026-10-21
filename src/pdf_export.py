@@ -83,18 +83,12 @@ class _CVPDF(FPDF):
             r"^\s{0,5}(?:Core|Language|System|Cloud|Database|Framework|AI|Tool|Method|DevOps|Libraries|Platforms)\w*\s*[:\-]",
             line, re.I))
 
-    def render(self, cv_text: str, out_path: str) -> str:
-        lines = cv_text.split("\n")
-        for base in [10.5, 10.0, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0]:
-            self._set_sizes(base)
-            self.add_page()
-            self._render_lines(lines)
-            if self.get_y() <= 275:
-                break
-            self.delete_page(self.page())
-
-        self.output(out_path)
-        return out_path
+    def render(self, cv_text: str, base: float) -> bool:
+        """Render at one font size; return True if it fit on the page."""
+        self._set_sizes(base)
+        self.add_page()
+        self._render_lines(cv_text.split("\n"))
+        return self.get_y() <= 275
 
     def _render_lines(self, lines: list[str]):
         x0 = self.l_margin
@@ -222,6 +216,10 @@ def export_pdf(cv_text: str, out_path: str) -> str:
     if has_dashes(cv_text):
         raise ValueError("cv_text still contains dashes; sanitize before export")
 
-    pdf = _CVPDF()
-    pdf.render(cv_text, out_path)
+    # Fresh document per size: fpdf2 can't delete a page once drawn.
+    for base in [10.5, 10.0, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0]:
+        pdf = _CVPDF()
+        if pdf.render(cv_text, base):
+            break
+    pdf.output(out_path)
     return out_path

@@ -27,3 +27,12 @@ def test_export_pdf_handles_unicode(tmp_path):
     out = tmp_path / "u.pdf"
     export_pdf("ASHA RAO\nasha@x.com | “quoted” ‘x’ café … 🚀\n\nEDUCATION\nIIT  2020 to 2024\n", str(out))
     assert out.stat().st_size > 0
+
+
+def test_export_pdf_long_cv_shrinks_to_one_page(tmp_path):
+    from PyPDF2 import PdfReader
+    from src.pdf_export import export_pdf
+    body = "\n".join(f"  • Built service number {i} handling 1,000 requests per second" for i in range(70))
+    out = tmp_path / "long.pdf"
+    export_pdf("ASHA RAO\nasha@x.com\n\nEXPERIENCE\n" + body, str(out))
+    assert len(PdfReader(str(out)).pages) == 1
