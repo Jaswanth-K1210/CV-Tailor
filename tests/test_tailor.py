@@ -55,3 +55,8 @@ def test_review_normalises_score_strings():
 def test_review_defaults_missing_lists_to_empty():
     r = tailor.review_resume(PROFILE, "jd", "cv", {"score": 80}, _capture('{"score": 9}'))
     assert r["issues"] == [] and r["fabrications"] == [] and r["missing_from_profile"] == []
+
+
+def test_write_strips_preamble_fence_and_trailing_notes():
+    raw = "HERE IS THE FINISHED CV:\n```\nASHA RAO\nEDUCATION\n```\n**Changes made:** | a | b |"
+    assert tailor.write_resume(PROFILE, "jd", _capture(raw)) == "ASHA RAO\nEDUCATION"

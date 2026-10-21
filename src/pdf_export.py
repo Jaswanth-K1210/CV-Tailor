@@ -174,7 +174,7 @@ class _CVPDF(FPDF):
                 indent = x0 + 5
                 self.set_x(indent)
                 text = self._clean_bullet(stripped)
-                self.cell(3, self._line_h, "o", new_x="END")
+                self.cell(3, self._line_h, "\u00b7 ", new_x="END")
                 self.multi_cell(w - 8, self._line_h, text)
                 self.ln(0.5)
                 continue

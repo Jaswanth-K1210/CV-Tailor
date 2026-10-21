@@ -45,13 +45,19 @@ RESUME:
 {resume}"""
 
 
+_FENCE_RE = re.compile(r"```[a-z]*\n(.*?)```", re.S)
+
+
 def write_resume(profile: dict, jd: str, llm, feedback: str = "",
                  previous: str = "") -> str:
-    return llm(_WRITE_PROMPT.format(
+    out = llm(_WRITE_PROMPT.format(
         fmt=_FORMAT, jd=jd, profile=dumps(profile),
         feedback=f"\nFIX THESE PROBLEMS FROM THE LAST DRAFT:\n{feedback}\n" if feedback else "",
         previous=f"\nLAST DRAFT:\n{previous}" if previous else "",
-    )).strip()
+    ))
+    # Models often wrap the CV in a preamble, a code fence and a change log.
+    m = _FENCE_RE.search(out)
+    return (m.group(1) if m else out).strip()
 
 
 def _score(raw) -> float:

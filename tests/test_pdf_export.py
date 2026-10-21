@@ -43,3 +43,12 @@ def test_export_pdf_inline_bullet_char(tmp_path):
     out = tmp_path / "b.pdf"
     export_pdf("ASHA RAO\n\nSKILLS\n  Languages: Python • Go • SQL\n  • Built X\n", str(out))
     assert out.stat().st_size > 0
+
+
+def test_bullet_text_is_not_glued_to_marker(tmp_path):
+    from PyPDF2 import PdfReader
+    from src.pdf_export import export_pdf
+    out = tmp_path / "g.pdf"
+    export_pdf("ASHA RAO\n\nEXPERIENCE\n  • Built a scheduler\n", str(out))
+    text = PdfReader(str(out)).pages[0].extract_text()
+    assert "Built a scheduler" in text and "oBuilt" not in text
