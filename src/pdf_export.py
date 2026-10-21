@@ -210,7 +210,15 @@ class _CVPDF(FPDF):
             self.ln(0.3)
 
 
+# The core Times font is latin-1 only; map common typographic characters to
+# ASCII and drop anything else (emoji, non-Latin scripts) so export never crashes.
+_ASCII_MAP = str.maketrans({"\u201c": '"', "\u201d": '"', "\u2018": "'",
+                            "\u2019": "'", "\u2026": "..."})
+
+
 def export_pdf(cv_text: str, out_path: str) -> str:
+    cv_text = cv_text.translate(_ASCII_MAP)
+    cv_text = "".join(c if c == "\u2022" or ord(c) < 256 else "" for c in cv_text)
     if has_dashes(cv_text):
         raise ValueError("cv_text still contains dashes; sanitize before export")
 

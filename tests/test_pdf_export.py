@@ -20,3 +20,10 @@ def test_export_pdf_rejects_dashes(tmp_path):
     out = str(tmp_path / "cv.pdf")
     with pytest.raises(ValueError):
         export_pdf("fast-paced role", out)
+
+
+def test_export_pdf_handles_unicode(tmp_path):
+    from src.pdf_export import export_pdf
+    out = tmp_path / "u.pdf"
+    export_pdf("ASHA RAO\nasha@x.com | “quoted” ‘x’ café … 🚀\n\nEDUCATION\nIIT  2020 to 2024\n", str(out))
+    assert out.stat().st_size > 0
