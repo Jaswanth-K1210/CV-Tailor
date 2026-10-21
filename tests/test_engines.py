@@ -71,3 +71,11 @@ def test_generate_raises_runtimeerror_on_nonzero_exit(monkeypatch):
     )
     with pytest.raises(RuntimeError):
         eng.generate("prompt", "sonnet", timeout=10)
+
+
+def test_agy_engine_args():
+    from src.engines import get_engine
+    eng = get_engine("agy")
+    assert eng._binary_names() == ["agy"]
+    assert eng._generate_args("m") == ["--model", "m", "-p"]
+    assert eng._send_prompt_via_stdin() is False

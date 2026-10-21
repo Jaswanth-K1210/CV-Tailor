@@ -12,6 +12,7 @@ ENGINE_MAP: dict[str, str] = {
     "codex": "src.engines.codex",
     "opencode": "src.engines.opencode",
     "ollama": "src.engines.ollama",
+    "agy": "src.engines.antigravity",
 }
 
 ENGINE_LABELS: dict[str, str] = {
@@ -20,6 +21,7 @@ ENGINE_LABELS: dict[str, str] = {
     "codex": "Codex CLI",
     "opencode": "OpenCode",
     "ollama": "Ollama (local)",
+    "agy": "Antigravity",
 }
 
 DEFAULT_MODELS: dict[str, str] = {
@@ -31,6 +33,7 @@ DEFAULT_MODELS: dict[str, str] = {
     # unless the user has configured Anthropic auth, causing a server error.
     "opencode": "opencode/deepseek-v4-flash-free",
     "ollama": "llama3.2",
+    "agy": "claude-sonnet-4-6",
 }
 
 
