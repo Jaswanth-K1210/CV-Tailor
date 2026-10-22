@@ -24,6 +24,10 @@ def test_fetch_jd_non_200_raises(monkeypatch):
         text = ""
 
     monkeypatch.setattr("src.jd_fetcher.requests.get", lambda *a, **k: FakeResp())
+
+    def no_browser(url):
+        raise FetchError("blocked")
+    monkeypatch.setattr("src.jd_fetcher._fetch_playwright", no_browser)
     with pytest.raises(FetchError):
         fetch_jd("https://example.com/job")
 
