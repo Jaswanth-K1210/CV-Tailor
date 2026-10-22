@@ -121,7 +121,9 @@ def create_app(data_dir: str) -> FastAPI:
 
     @app.get("/api/config")
     async def config():
-        return {"google_client_id": os.environ.get("GOOGLE_CLIENT_ID", ""),
+        from src.profile import AI_PASTE_PROMPT
+        return {"ai_prompt": AI_PASTE_PROMPT,
+                "google_client_id": os.environ.get("GOOGLE_CLIENT_ID", ""),
                 "dev_login": os.environ.get("CVT_DEV_LOGIN") == "1"}
 
     # ---------- user ----------
