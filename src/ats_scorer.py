@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 _DASH_CLASS = "[\\-\u2013\u2014]"
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
-_PHONE = re.compile(r"\b\d{3}[\s.\-]?\d{3}[\s.\-]?\d{4}\b")
+# 10+ digits with optional +country code and separators (covers US and +91 98765 43210).
+_PHONE = re.compile(r"(?<![\w])\+?\d(?:[\s.\-()]*\d){9,13}(?![\w])")
 _LINKEDIN = re.compile(r"linkedin\.com/in/[\w\-]+", re.I)
 _GITHUB = re.compile(r"github\.com/[\w\-]+", re.I)
 
@@ -41,10 +42,18 @@ def _tokens(text: str) -> list[str]:
     return re.findall(r"[a-zA-Z][a-zA-Z+#.]*[a-zA-Z]|[a-zA-Z]", text.lower())
 
 
+# Common JD verbs/filler that aren't skills; chasing them makes the writer keyword-stuff.
+_JD_FILLER = {
+    "end", "own", "plus", "requirements", "requirement", "will", "you", "your", "our",
+    "improve", "build", "work", "team", "role", "help", "strong", "ability", "years",
+    "experience", "preferred", "required", "responsibilities", "including", "etc",
+}
+
+
 def extract_keywords(jd: str, top_n: int = 30) -> list[str]:
     counts = Counter(
         t for t in _tokens(jd)
-        if t not in STOPWORDS and len(t) > 2
+        if t not in STOPWORDS and t not in _JD_FILLER and len(t) > 2
     )
     return [w for w, _ in counts.most_common(top_n)]
 
@@ -181,7 +190,7 @@ def score_cv(cv: str, jd: str) -> dict:
         notes.append("no strong action verbs found")
 
     # 7. Bullet points present (max 5 pts)
-    bullet_count = len(re.findall(r"(?:^|\n)\s*[•\-*]\s", cv))
+    bullet_count = len(re.findall(r"(?:^|\n)\s*[•·\-*]\s", cv))
     if bullet_count >= 5:
         total += 5.0
     elif bullet_count >= 3:

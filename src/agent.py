@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import sys
 
@@ -24,6 +25,20 @@ def local_ats(text: str, jd: str) -> dict:
 def ask_in_terminal(questions: list[str]) -> dict[str, str]:
     print("\nThe job asks for things your profile doesn't show. Answer or press Enter to skip.")
     return {q: input(f"  {q}\n  > ") for q in questions}
+
+
+def tailor_job(prof: dict, jd: str, engine: str, reviewer_engine: str | None,
+               ask_gaps, on_round) -> dict:
+    """Run the full loop with real engines. Mutates prof with gap answers."""
+    writer = make_llm(engine)
+    reviewer = make_llm(reviewer_engine or engine)
+    return tailor_loop.run(
+        prof, jd,
+        write=lambda p, j, fb, prev: sanitizer.remove_dashes(
+            tailor.write_resume(p, j, writer, fb, prev)),
+        review=lambda p, j, cv, ats: tailor.review_resume(p, j, cv, ats, reviewer),
+        ats=local_ats, ask_gaps=ask_gaps, on_round=on_round,
+    )
 
 
 def cmd_profile(a) -> None:
@@ -50,16 +65,8 @@ def cmd_run(a) -> None:
             jd = f.read()
     else:
         jd = jd_fetcher.fetch_jd(a.job)
-    writer = make_llm(a.engine)
-    reviewer = make_llm(a.reviewer_engine or a.engine)
-
-    result = tailor_loop.run(
-        prof, jd,
-        write=lambda p, j, fb, prev: sanitizer.remove_dashes(
-            tailor.write_resume(p, j, writer, fb, prev)),
-        review=lambda p, j, cv, ats: tailor.review_resume(p, j, cv, ats, reviewer),
-        ats=local_ats,
-        ask_gaps=ask_in_terminal,
+    result = tailor_job(
+        prof, jd, a.engine, a.reviewer_engine, ask_gaps=ask_in_terminal,
         on_round=lambda r: print(f"round {r['round']}: ATS {r['ats']['score']} · "
                                  f"review {r['review']['score']:g}/10"),
     )
@@ -99,8 +106,17 @@ def main(argv: list[str] | None = None) -> None:
     r.add_argument("--reviewer-engine")
     r.add_argument("-o", "--output", default="resume.pdf")
 
+    lk = sub.add_parser("link", help="link this computer to your account on the website")
+    lk.add_argument("code")
+    lk.add_argument("--server", required=True)
+    sub.add_parser("serve", help="run jobs from the website on this computer")
+
     a = ap.parse_args(argv)
-    if a.cmd == "prompt":
+    if a.cmd in ("link", "serve"):
+        from src import worker
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+        worker.link(a.server, a.code) if a.cmd == "link" else worker.serve()
+    elif a.cmd == "prompt":
         print(profile_mod.AI_PASTE_PROMPT)
     elif a.cmd == "profile":
         cmd_profile(a)

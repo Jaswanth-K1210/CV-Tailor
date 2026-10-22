@@ -13,6 +13,8 @@ using ONLY facts from the PROFILE. Pick the most relevant experience and project
 reorder, trim and reword them to match the job's keywords.
 Never invent a project, employer, metric, date or skill that is not in the PROFILE.
 If a number is not in the PROFILE, describe the impact without one.
+Start every bullet line with "  • ". Use a job keyword only where the PROFILE backs it;
+no self-assessment sentences ("meets the requirements") and no keyword stuffing.
 
 {fmt}
 {feedback}
@@ -25,7 +27,8 @@ PROFILE (JSON):
 
 _REVIEW_PROMPT = """You are a strict, honest hiring manager reviewing a resume for the job below.
 Score it 0-10 for how strongly it would get this candidate an interview.
-Check every claim against the PROFILE; anything not backed by it is a fabrication.
+Check every claim against the PROFILE. "fabrications" lists ONLY claims the PROFILE
+does not support (empty list if none); never list supported items or notes there.
 List job requirements the PROFILE has no evidence for as missing_from_profile,
 phrased as a short question to the candidate (e.g. "Have you used Kubernetes? Where?").
 Never ask about anything already covered in PROFILE.user_answers, even reworded.

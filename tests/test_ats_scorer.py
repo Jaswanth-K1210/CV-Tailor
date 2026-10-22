@@ -63,3 +63,24 @@ def test_dashes_penalize_score():
     clean = "Summary. Python SQL AWS. Skills Python SQL AWS. Experience. Education. a@b.com 40%"
     dirty = clean + " fast-paced"
     assert score_cv(dirty, jd)["score"] <= score_cv(clean, jd)["score"]
+
+
+def test_indian_phone_format_detected():
+    from src.ats_scorer import score_cv
+    cv = "Ravi Kumar | +91 98765 43210 | r@x.com | linkedin.com/in/r\n"
+    assert "no phone found" not in score_cv(cv, "python")["notes"]
+
+
+def test_middle_dot_bullets_count():
+    from src.ats_scorer import score_cv
+    cv = "\n".join(f"  · Built thing {i}" for i in range(6))
+    assert not any("bullet" in n for n in score_cv(cv, "python")["notes"])
+
+
+def test_jd_filler_words_are_not_keywords():
+    from src.ats_scorer import extract_keywords
+    kws = extract_keywords("You will own APIs end to end. Requirements: Python. Django a plus. "
+                           "Improve latency. Build services. " * 3)
+    for junk in ("own", "end", "plus", "requirements", "will", "improve", "build"):
+        assert junk not in kws
+    assert "python" in kws and "django" in kws
