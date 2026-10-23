@@ -44,6 +44,9 @@ Give two scores, 0 to 10:
   this job. 10 means no better resume could be written from this PROFILE without inventing
   anything. Judge selection of the most relevant items, keyword use, bullet impact, clarity
   and one-page fit. Do NOT lower it for experience the PROFILE lacks.
+  Calibrate: 9 or 10 when only minor polish is left, 7 to 8 when a few real fixes
+  remain, 6 or less when there are major problems. Each issue must be a fix that would
+  raise this score.
 - "fit": how well the candidate's real experience matches the job (missing experience lowers this).
 "issues" are concrete fixes the writer can make from the PROFILE alone.
 Check every claim against the PROFILE. "fabrications" lists ONLY claims the PROFILE

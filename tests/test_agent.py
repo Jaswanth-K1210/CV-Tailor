@@ -50,3 +50,10 @@ def test_local_ats_only_suggests_keywords_the_profile_backs():
     kw = [i for i in r["issues"] if i.startswith("missing keywords")]
     assert kw == ["missing keywords: kubernetes"]
     assert "missing section: summary" not in r["issues"]
+
+
+def test_evidence_text_ignores_gap_questions_and_skips():
+    text = agent._evidence_text({"skills": {"x": ["Redis"]}, "user_answers": [
+        {"question": "Have you used Django?", "answer": "(skipped, no experience to add)"},
+        {"question": "Kubernetes?", "answer": "Ran minikube"}]})
+    assert "redis" in text and "minikube" in text and "django" not in text

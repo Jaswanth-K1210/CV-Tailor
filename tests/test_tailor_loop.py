@@ -104,3 +104,18 @@ def test_failed_later_round_keeps_best_so_far():
     with pytest.raises(RuntimeError):
         run({}, "jd", write=lambda *a: (_ for _ in ()).throw(RuntimeError("x")),
             ats=None, review=None, ask_gaps=None)
+
+
+def test_revises_best_draft_not_last():
+    seen = []
+
+    def write(profile, jd, feedback, previous):
+        seen.append(previous)
+        return f"cv{len(seen)}"
+
+    scores = iter([7, 8, 6, 9])
+    run({}, "jd", write=write, ats=lambda t, j: {"score": 90, "issues": []},
+        review=lambda p, j, r, a: {"score": next(scores), "issues": [f"fix {r}"],
+                                   "fabrications": [], "missing_from_profile": []},
+        ask_gaps=lambda qs: {})
+    assert seen == ["", "cv1", "cv2", "cv2"]

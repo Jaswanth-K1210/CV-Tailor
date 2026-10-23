@@ -32,6 +32,15 @@ def local_ats(text: str, jd: str, profile_text: str | None = None) -> dict:
     return {"score": round(s["score"]), "issues": issues}
 
 
+def _evidence_text(prof: dict) -> str:
+    """Profile text that counts as evidence: everything except the gap questions
+    themselves (a question mentioning "Django" is not Django experience)."""
+    facts = {k: v for k, v in prof.items() if k != "user_answers"}
+    answers = [a.get("answer", "") for a in prof.get("user_answers", [])
+               if not a.get("answer", "").startswith("(skipped")]
+    return (profile_mod.dumps(facts) + "\n" + "\n".join(answers)).lower()
+
+
 def ask_in_terminal(questions: list[str]) -> dict[str, str]:
     print("\nThe job asks for things your profile doesn't show. Answer or press Enter to skip.")
     return {q: input(f"  {q}\n  > ") for q in questions}
@@ -47,7 +56,7 @@ def tailor_job(prof: dict, jd: str, engine: str, reviewer_engine: str | None,
         write=lambda p, j, fb, prev: tailor.write_resume(p, j, writer, fb, prev),
         review=lambda p, j, cv, ats: tailor.review_resume(
             p, j, tailor.resume_to_text(cv), ats, reviewer),
-        ats=lambda cv, j: local_ats(tailor.resume_to_text(cv), j, profile_mod.dumps(prof).lower()),
+        ats=lambda cv, j: local_ats(tailor.resume_to_text(cv), j, _evidence_text(prof)),
         ask_gaps=ask_gaps, on_round=on_round,
     )
 

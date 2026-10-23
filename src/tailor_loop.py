@@ -69,11 +69,14 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
                 profile.setdefault("user_answers", []).append(
                     {"question": q, "answer": a, "source": "user"})
 
+        # Always revise the best draft so far with its own feedback; revising a
+        # worse draft just loses what the better one got right.
+        base = max(rounds, key=_rank)
         feedback = "\n".join(
-            [f"ATS: {i}" for i in ats_result.get("issues", [])]
-            + [f"Reviewer: {i}" for i in rev["issues"]]
-            + [f"remove: {f}" for f in rev["fabrications"]])
-        previous = resume
+            [f"ATS: {i}" for i in base["ats"].get("issues", [])]
+            + [f"Reviewer: {i}" for i in base["review"]["issues"]]
+            + [f"remove: {f}" for f in base["review"]["fabrications"]])
+        previous = base["resume"]
 
     best = max(rounds, key=_rank)
     return {"resume": best["resume"], "ats": best["ats"], "review": best["review"],

@@ -28,7 +28,7 @@ h2 { font-size: 1.02rem; text-transform: uppercase; letter-spacing: 0.04em; font
 .row { display: flex; justify-content: space-between; gap: 1rem; }
 .row .r { white-space: nowrap; }
 .sub { font-size: 0.9rem; font-style: italic; }
-ul { margin: 0.1rem 0 0.15rem 1.2rem; padding: 0; }
+ul { margin: 0.1rem 0 0.15rem 1.7rem; padding: 0; }
 li { font-size: 0.9rem; margin: 0 0 0.08rem; padding-left: 0.15rem; }
 .skills { margin-left: 0.6rem; font-size: 0.92rem; }
 .skills div { margin-bottom: 0.08rem; }
