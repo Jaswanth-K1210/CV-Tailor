@@ -35,9 +35,21 @@ def test_fetch_jd_non_200_raises(monkeypatch):
 def test_fetch_jd_success(monkeypatch):
     class FakeResp:
         status_code = 200
-        text = "<html><body><h1>Engineer</h1><p>Python role</p></body></html>"
+        text = ("<html><body><h1>Engineer</h1><p>Python role</p><p>"
+                + "Build reliable services. " * 30 + "</p></body></html>")
 
     monkeypatch.setattr("src.jd_fetcher.requests.get", lambda *a, **k: FakeResp())
     out = fetch_jd("https://example.com/job")
     assert "Engineer" in out
     assert "Python role" in out
+
+
+def test_fetch_jd_title_only_page_is_rejected(monkeypatch):
+    class FakeResp:
+        status_code = 200
+        text = "<html><head><title>Web Accessibility Engineer - Jobs - Careers at Apple</title></head></html>"
+
+    monkeypatch.setattr("src.jd_fetcher.requests.get", lambda *a, **k: FakeResp())
+    monkeypatch.setattr("src.jd_fetcher._fetch_playwright", lambda url: "Web Accessibility Engineer")
+    with pytest.raises(FetchError, match="Paste the job description"):
+        fetch_jd("https://jobs.apple.com/en-us/details/123")

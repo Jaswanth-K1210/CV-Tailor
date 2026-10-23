@@ -77,3 +77,10 @@ def test_github_text_accepts_url_and_handle(monkeypatch):
                   "@Jaswanth-K1210", "Jaswanth-K1210"):
         profile.github_text(given)
     assert set(urls) == {"https://api.github.com/users/Jaswanth-K1210/repos"}
+
+
+def test_draft_answers_only_from_profile_and_blank_when_unknown():
+    llm = _capture(json.dumps({"answers": {"Used Kite?": "Built Kite, a scheduler", "WCAG?": None}}))
+    out = tailor.draft_answers(PROFILE, ["Used Kite?", "WCAG?", "Missing?"], llm)
+    assert out == {"Used Kite?": "Built Kite, a scheduler", "WCAG?": "", "Missing?": ""}
+    assert "Kite" in llm.seen[0] and "leave it empty" in llm.seen[0]

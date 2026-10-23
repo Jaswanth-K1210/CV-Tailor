@@ -79,3 +79,24 @@ def review_resume(profile: dict, jd: str, resume: str, ats: dict, llm) -> dict:
         "fabrications": list(r.get("fabrications") or []),
         "missing_from_profile": list(r.get("missing_from_profile") or []),
     }
+
+
+_DRAFT_PROMPT = """A recruiter asked the candidate the questions below. Draft the candidate's answer
+to each, in first person, 1-2 sentences, using ONLY facts in the PROFILE (including any
+GitHub repos it lists). If the PROFILE has no evidence for a question, leave it empty;
+never guess or invent. The candidate will approve or rewrite every draft.
+
+Return ONLY JSON: {{"answers": {{"<question>": "<draft or empty string>"}}}}
+
+QUESTIONS:
+{questions}
+
+PROFILE (JSON):
+{profile}"""
+
+
+def draft_answers(profile: dict, questions: list[str], llm) -> dict[str, str]:
+    r = ask_json(llm, _DRAFT_PROMPT.format(
+        questions="\n".join(f"- {q}" for q in questions), profile=dumps(profile)), "draft")
+    got = r.get("answers") or {}
+    return {q: (got.get(q) or "").strip() for q in questions}

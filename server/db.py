@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS questions (
     id INTEGER PRIMARY KEY,
     job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
     text TEXT NOT NULL,
+    draft TEXT,
     answer TEXT,
     asked_at REAL NOT NULL,
     answered_at REAL
@@ -68,4 +69,10 @@ def connect(path: str) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     conn.executescript(_SCHEMA)
+    # Columns added after the first release; ALTER is a no-op error on new databases.
+    for table, column in (("questions", "draft TEXT"),):
+        try:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column}")
+        except sqlite3.OperationalError:
+            pass
     return conn

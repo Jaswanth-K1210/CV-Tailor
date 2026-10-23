@@ -168,7 +168,10 @@ def test_questions_answers_roundtrip(make_client):
     jid = c.post("/api/jobs", json={"jd": "x"}).json()["id"]
     c.get("/api/agent/next?wait=0", headers=headers)
     ids = c.post(f"/api/agent/jobs/{jid}/questions", headers=headers,
-                 json={"questions": ["Django?", "AWS?"]}).json()["ids"]
+                 json={"questions": ["Django?", "AWS?"],
+                       "drafts": {"Django?": "Built a blog in Django"}}).json()["ids"]
+    qs = c.get(f"/api/jobs/{jid}").json()["questions"]
+    assert qs[0]["draft"] == "Built a blog in Django" and qs[1]["draft"] is None
     assert c.get(f"/api/jobs/{jid}").json()["status"] == "waiting"
     c.post(f"/api/jobs/{jid}/answers", json={str(ids[0]): "Yes, at Acme"})
     got = c.get(f"/api/agent/jobs/{jid}/answers", headers=headers).json()

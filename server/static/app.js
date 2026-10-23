@@ -317,10 +317,19 @@ async function jobPage(id) {
       <p><a href="#/profile">Check your profile</a> or <a href="#/">tailor your first resume</a>.</p>` : ""}
 
     ${open.length ? `<h2>The job asks for things your profile doesn't show</h2>
-      <p class="muted small">Answer honestly. Your answers are saved to your profile. Leave blank to skip.</p>
+      <p class="muted small">Your AI drafted answers from your profile where it found evidence.
+        Use a draft only if it's true, or write your own. Anything left blank is skipped.
+        Answers are saved to your profile.</p>
       <form id="answers">${open.map((q) => `
         <div class="question"><p>${esc(q.text)}</p>
-          <textarea data-id="${q.id}" aria-label="${esc(q.text)}">${esc(drafts[q.id] || "")}</textarea></div>`).join("")}
+          ${q.draft ? `<blockquote class="draft">${esc(q.draft)}</blockquote>
+            <div class="draft-actions">
+              <button type="button" class="secondary" data-use="${q.id}">Use this answer</button>
+              <button type="button" class="link" data-own="${q.id}">Write my own</button>
+            </div>`
+          : `<p class="small muted">Your AI found nothing in your profile for this.</p>`}
+          <textarea data-id="${q.id}" data-draft="${esc(q.draft || "")}" aria-label="Your answer: ${esc(q.text)}"
+            placeholder="Your answer, or leave blank to skip">${esc(drafts[q.id] || "")}</textarea></div>`).join("")}
         <button class="primary">Send answers</button>
       </form>` : ""}
 
@@ -338,6 +347,13 @@ async function jobPage(id) {
 
     ${job.jd ? `<h2>Job description</h2><div class="jd">${esc(job.jd)}</div>` : ""}`);
 
+  document.getElementById("answers")?.addEventListener("click", (ev) => {
+    const id = ev.target.dataset.use || ev.target.dataset.own;
+    if (!id) return;
+    const box = app.querySelector(`textarea[data-id="${id}"]`);
+    box.value = ev.target.dataset.use ? box.dataset.draft : "";
+    box.focus();
+  });
   document.getElementById("answers")?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const body = {};

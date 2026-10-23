@@ -121,3 +121,7 @@ ol.steps > li.done::before { content: "✓"; background: var(--ink); color: #fff
 @media (prefers-reduced-motion: no-preference) {
   .bar .fill { transition: width 400ms ease-out; }
 }
+
+.draft { margin: 0 0 8px; padding: 8px 12px; background: var(--sheet); border-left: 3px solid var(--pencil); border-radius: 0 6px 6px 0; }
+.draft-actions { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; }
+.question textarea { min-height: 72px; }

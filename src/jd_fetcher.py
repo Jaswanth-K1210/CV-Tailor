@@ -141,27 +141,27 @@ def _clean_text(html: str) -> str:
     return re.sub(r"\s+", " ", soup.get_text(separator=" ")).strip()
 
 
+# A real job description is at least this many words; less means we only got
+# the page title or a JavaScript shell (e.g. jobs.apple.com without rendering).
+MIN_WORDS = 80
+
+
 def fetch_jd(url: str) -> str:
     ats = _detect_ats(url)
+    strategies = []
     if ats == "greenhouse":
-        try:
-            return _fetch_greenhouse(url)
-        except FetchError:
-            pass
+        strategies.append(_fetch_greenhouse)
     if ats == "lever":
+        strategies.append(_fetch_lever)
+    strategies += [_fetch_simple, _fetch_playwright]
+    for fetch in strategies:
         try:
-            return _fetch_lever(url)
+            text = fetch(url)
         except FetchError:
-            pass
-    try:
-        return _fetch_simple(url)
-    except FetchError:
-        pass
-    try:
-        return _fetch_playwright(url)
-    except FetchError:
-        pass
+            continue
+        if len(text.split()) >= MIN_WORDS:
+            return text
     raise FetchError(
-        "could not fetch job description from this URL. "
-        "Paste the job description manually."
+        "Couldn't read the full job description from this page. "
+        "Paste the job description instead."
     )

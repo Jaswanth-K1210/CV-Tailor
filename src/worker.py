@@ -10,7 +10,7 @@ from pathlib import Path
 
 import requests
 
-from src import agent, jd_fetcher
+from src import agent, jd_fetcher, tailor
 from src import profile as profile_mod
 from src.engines import get_engine
 from src.pdf_export import export_pdf
@@ -51,9 +51,9 @@ class Api:
         requests.post(f"{self.base}/event", json={"type": type_, "data": data},
                       headers=self.headers, timeout=20).raise_for_status()
 
-    def ask(self, questions: list[str], timeout: float = ANSWER_TIMEOUT,
-            poll: float = 5) -> dict[str, str]:
-        requests.post(f"{self.base}/questions", json={"questions": questions},
+    def ask(self, questions: list[str], drafts: dict[str, str] | None = None,
+            timeout: float = ANSWER_TIMEOUT, poll: float = 5) -> dict[str, str]:
+        requests.post(f"{self.base}/questions", json={"questions": questions, "drafts": drafts or {}},
                       headers=self.headers, timeout=20).raise_for_status()
         deadline = time.time() + timeout
         while True:
@@ -101,7 +101,17 @@ def handle_job(api, job: dict) -> None:
             jd = jd_fetcher.fetch_jd(job["job_url"])
             api.event("jd", {"jd": jd})
         prof = job["profile"]
-        result = agent.tailor_job(prof, jd, job["engine"], None, ask_gaps=api.ask,
+
+        def ask_gaps(questions):
+            api.event("log", {"msg": "your AI is drafting answers from your profile"})
+            try:
+                drafts = tailor.draft_answers(prof, questions, agent.make_llm(job["engine"]))
+            except Exception as exc:
+                logger.warning("drafting answers failed: %s", exc)
+                drafts = {}
+            return api.ask(questions, drafts)
+
+        result = agent.tailor_job(prof, jd, job["engine"], None, ask_gaps=ask_gaps,
                                   on_round=lambda r: api.event("round", r))
         with tempfile.TemporaryDirectory() as tmp:
             pdf = os.path.join(tmp, "resume.pdf")

@@ -224,8 +224,8 @@ def create_app(data_dir: str) -> FastAPI:
         j = own_job(job_id, user["id"])
         events = [{"ts": e["ts"], "type": e["type"], "data": _loads(e["data_json"])}
                   for e in q("SELECT * FROM events WHERE job_id = ? ORDER BY id", job_id)]
-        questions = [dict(r) for r in q("SELECT id, text, answer FROM questions WHERE job_id = ?",
-                                        job_id)]
+        questions = [dict(r) for r in q("SELECT id, text, draft, answer FROM questions "
+                                        "WHERE job_id = ?", job_id)]
         return {"id": j["id"], "kind": j["kind"], "status": j["status"], "job_url": j["job_url"],
                 "jd": j["jd"], "error": j["error"], "result": _loads(j["result_json"]),
                 "events": events, "questions": questions,
@@ -307,8 +307,10 @@ def create_app(data_dir: str) -> FastAPI:
     @app.post("/api/agent/jobs/{job_id}/questions")
     async def agent_questions(job_id: int, body: dict, dev=Depends(device_from_bearer)):
         agent_job(job_id, dev)
-        ids = [q("INSERT INTO questions(job_id, text, asked_at) VALUES (?, ?, ?)",
-                 job_id, text, time.time()).lastrowid for text in body.get("questions", [])]
+        drafts = body.get("drafts") or {}
+        ids = [q("INSERT INTO questions(job_id, text, draft, asked_at) VALUES (?, ?, ?, ?)",
+                 job_id, text, drafts.get(text) or None, time.time()).lastrowid
+               for text in body.get("questions", [])]
         q("UPDATE jobs SET status = 'waiting', updated_at = ? WHERE id = ?", time.time(), job_id)
         return {"ids": ids}
 
