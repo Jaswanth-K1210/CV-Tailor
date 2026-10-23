@@ -237,6 +237,13 @@ def create_app(data_dir: str) -> FastAPI:
         for qid, text in body.items():
             q("UPDATE questions SET answer = ?, answered_at = ? WHERE id = ? AND job_id = ?",
               str(text), time.time(), int(qid), job_id)
+        # Show progress right away; the helper picks the answers up within 5 s
+        # but won't post anything until the next round is written.
+        pending = q("SELECT COUNT(*) FROM questions WHERE job_id = ? AND answer IS NULL",
+                    job_id).fetchone()[0]
+        if not pending and q("UPDATE jobs SET status = 'running' WHERE id = ? AND status = 'waiting'",
+                             job_id).rowcount:
+            add_event(job_id, "log", {"msg": "Got your answers. Writing the next draft…"})
         return {"ok": True}
 
     @app.get("/api/jobs/{job_id}/pdf")

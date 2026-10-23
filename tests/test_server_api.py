@@ -176,6 +176,11 @@ def test_questions_answers_roundtrip(make_client):
     c.post(f"/api/jobs/{jid}/answers", json={str(ids[0]): "Yes, at Acme"})
     got = c.get(f"/api/agent/jobs/{jid}/answers", headers=headers).json()
     assert got == {"answers": {"Django?": "Yes, at Acme"}, "pending": 1}
+    assert c.get(f"/api/jobs/{jid}").json()["status"] == "waiting"
+    c.post(f"/api/jobs/{jid}/answers", json={str(ids[1]): ""})
+    job = c.get(f"/api/jobs/{jid}").json()
+    assert job["status"] == "running"
+    assert job["events"][-1]["data"]["msg"].startswith("Got your answers")
 
 
 def test_finish_stores_pdf_and_profile(make_client):
