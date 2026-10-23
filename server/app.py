@@ -289,6 +289,18 @@ def create_app(data_dir: str) -> FastAPI:
                 return {"job": None}
             await asyncio.sleep(1)
 
+    @app.post("/api/agent/reset")
+    async def agent_reset(dev=Depends(device_from_bearer)):
+        # The helper calls this on start: anything it was running died with it.
+        # ponytail: fails all of the user's unfinished jobs, so with two linked
+        # computers a restart on one also fails the other's job; track the
+        # claiming device per job if multi-computer use becomes common.
+        q("UPDATE jobs SET status = 'failed', updated_at = ?, error = ? "
+          "WHERE user_id = ? AND status IN ('running', 'waiting')", time.time(),
+          "The helper on your computer was restarted before this finished. Submit the job again.",
+          dev["user_id"])
+        return {"ok": True}
+
     def agent_job(job_id: int, dev):
         row = q("SELECT * FROM jobs WHERE id = ? AND user_id = ?", job_id, dev["user_id"]).fetchone()
         if not row:

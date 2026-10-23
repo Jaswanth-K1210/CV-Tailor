@@ -114,7 +114,7 @@ class Engine(ABC):
         args = [binary] + self._generate_args(model)
         if not self._send_prompt_via_stdin():
             args.append(prompt)
-        logger.info("running: %s (timeout=%ds)", " ".join(args[:3]), timeout)
+        logger.info("running: %s --model %s (timeout=%ds)", self.name, model, timeout)
         t0 = time.monotonic()
         # Run in a throwaway working directory so agentic CLIs (claude, gemini,
         # opencode) don't pick up the current project's CLAUDE.md / config and

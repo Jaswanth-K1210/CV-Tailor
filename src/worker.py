@@ -133,6 +133,22 @@ def serve(server: str | None = None, token: str | None = None, once: bool = Fals
     engines = ",".join(installed_engines())
     print(f"Waiting for jobs from {server} (engines: {engines or 'none found'}). Ctrl+C to stop.")
     headers = {"Authorization": f"Bearer {token}"}
+
+    def reset():
+        try:
+            requests.post(f"{server}/api/agent/reset", headers=headers, timeout=10)
+        except requests.RequestException:
+            pass
+
+    reset()  # covers jobs left behind by a crash or a closed terminal
+    try:
+        _serve_loop(server, token, headers, engines, once)
+    except KeyboardInterrupt:
+        reset()
+        print("\nStopped. Any job in progress is marked as failed on the website; submit it again.")
+
+
+def _serve_loop(server: str, token: str, headers: dict, engines: str, once: bool) -> None:
     while True:
         try:
             r = requests.get(f"{server}/api/agent/next", params={"wait": 25, "engines": engines},

@@ -194,3 +194,15 @@ def test_finish_stores_pdf_and_profile(make_client):
     assert c.get(f"/api/jobs/{jid}/pdf").content == b"%PDF-1.4"
     assert c.get("/api/profile").json()["profile"] == {"contact": {"name": "B"}}
     assert c.get("/api/jobs").json()["jobs"][0]["review"] == 9
+
+
+def test_agent_reset_fails_unfinished_jobs(make_client):
+    c = _with_profile(make_client("a@x.com"))
+    headers = _link(c)
+    running = c.post("/api/jobs", json={"jd": "x"}).json()["id"]
+    c.get("/api/agent/next?wait=0", headers=headers)
+    queued = c.post("/api/jobs", json={"jd": "y"}).json()["id"]
+    assert c.post("/api/agent/reset", headers=headers).status_code == 200
+    job = c.get(f"/api/jobs/{running}").json()
+    assert job["status"] == "failed" and "restarted" in job["error"]
+    assert c.get(f"/api/jobs/{queued}").json()["status"] == "queued"
