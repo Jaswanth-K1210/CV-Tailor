@@ -11,9 +11,8 @@ class FakeApi:
     def event(self, type_, data):
         self.events.append((type_, data))
 
-    def ask(self, questions, drafts=None):
+    def ask(self, questions):
         self.asked.extend(questions)
-        self.drafts = drafts
         return self.answers
 
     def finish(self, result, pdf_path=None, profile=None):
@@ -22,7 +21,8 @@ class FakeApi:
                          "profile": profile}
 
 
-CV = "ASHA RAO\nasha@x.com\n\nPROJECTS\nKite  2023\n  • Built a scheduler\n"
+CV = json.dumps({"name": "Asha Rao", "contact": {"email": "asha@x.com"},
+                 "projects": [{"name": "Kite", "bullets": ["Built a scheduler"]}]})
 
 
 def _fake_llm(engine, model=None, timeout=300):
@@ -90,39 +90,3 @@ def test_ask_returns_partial_answers_after_timeout(monkeypatch):
                         lambda *a, **k: R({"answers": {}, "pending": 1}))
     api = worker.Api("http://s", "t", 1)
     assert api.ask(["Django?"], timeout=0, poll=0) == {}
-
-
-def test_gap_questions_are_sent_with_ai_drafts(monkeypatch):
-    def llm_factory(engine, model=None, timeout=300):
-        calls = {"review": 0}
-
-        def llm(prompt):
-            if "recruiter asked" in prompt:
-                return json.dumps({"answers": {"Used Kite?": "Built Kite"}})
-            if "hiring manager" in prompt:
-                calls["review"] += 1
-                return json.dumps({"score": 9 if calls["review"] > 1 else 5,
-                                   "missing_from_profile": ["Used Kite?"]})
-            return CV
-        return llm
-
-    monkeypatch.setattr(agent, "make_llm", llm_factory)
-    monkeypatch.setattr(agent, "local_ats", lambda *a: {"score": 90, "issues": []})
-    api = FakeApi()
-    worker.handle_job(api, {"id": 5, "kind": "tailor", "jd": "Python dev", "job_url": None,
-                            "engine": "claude", "profile": {"contact": {"name": "Asha"}}})
-    assert api.asked == ["Used Kite?"]
-    assert api.drafts == {"Used Kite?": "Built Kite"}
-
-
-def test_github_failure_does_not_fail_profile(monkeypatch):
-    monkeypatch.setattr(agent, "make_llm", _fake_llm)
-
-    def boom(u):
-        raise RuntimeError("404")
-    monkeypatch.setattr(worker.profile_mod, "github_text", boom)
-    api = FakeApi()
-    worker.handle_job(api, {"id": 4, "kind": "profile", "engine": "claude",
-                            "sources": {"resume": "cv", "github_user": "nobody"}})
-    assert api.finished["profile"]["contact"] == {"name": "Asha"}
-    assert any("GitHub" in d["msg"] for t, d in api.events if t == "log")

@@ -246,7 +246,7 @@ async function homePage() {
     ${tailored.length ? `<h2>Your resumes</h2><ul class="jobs">${tailored.map((j) => `
       <li><a href="#/job/${j.id}">
         <span class="title">${esc(j.job_url || "Pasted job description")}</span>
-        <span class="scores">${j.ats != null ? `ATS ${esc(j.ats)} · ${esc(j.review)}/10` : ""}</span>
+        <span class="scores">${j.ats != null ? `ATS ${esc(j.ats)} · resume ${esc(j.review)}/10` : ""}</span>
         <span class="status ${esc(j.status)}">${esc(statusText[j.status])}</span>
         <span class="small muted">${esc(new Date(j.created_at * 1000).toLocaleDateString())}</span>
       </a></li>`).join("")}</ul>`
@@ -265,9 +265,9 @@ function meter(name, value, max, line, pass) {
   const pct = (v) => Math.max(0, Math.min(100, (v / max) * 100));
   return `<div class="meter">
     <span class="name">${esc(name)}</span>
-    <span class="bar" role="img" aria-label="${esc(name)} ${esc(value)} of ${max}, needs ${pass}">
-      <span class="fill ${value >= line ? "pass" : ""}" style="width:${pct(value)}%"></span>
-      <span class="line" style="left:${pct(line)}%"></span>
+    <span class="bar" role="img" aria-label="${esc(name)} ${esc(value)} of ${max}${pass ? `, needs ${pass}` : ""}">
+      <span class="fill ${line != null && value >= line ? "pass" : ""}" style="width:${pct(value)}%"></span>
+      ${line == null ? "" : `<span class="line" style="left:${pct(line)}%"></span>`}
     </span>
     <span class="val">${esc(value)}</span>
   </div>`;
@@ -283,7 +283,8 @@ function roundHtml(r) {
     <span class="n">${esc(r.round)}</span>
     <div>
       ${meter("ATS", r.ats.score, 100, 86, "above 85")}
-      ${meter("Review", rev.score, 10, 9, "9 or more")}
+      ${meter("Resume", rev.score, 10, 9, "9 or more")}
+      ${rev.fit != null ? meter("Job fit", rev.fit, 10, null) : ""}
       ${notes.length ? `<details><summary class="small muted">Reviewer notes (${notes.length})</summary><ul class="notes">${notes.join("")}</ul></details>` : ""}
     </div>
   </li>`;
@@ -317,9 +318,8 @@ async function jobPage(id) {
       <p><a href="#/profile">Check your profile</a> or <a href="#/">tailor your first resume</a>.</p>` : ""}
 
     ${open.length ? `<h2>The job asks for things your profile doesn't show</h2>
-      <p class="muted small">Your AI drafted answers from your profile where it found evidence.
-        Use a draft only if it's true, or write your own. Anything left blank is skipped.
-        Answers are saved to your profile.</p>
+      <p class="muted small">Answer honestly; the resume only uses what's true. Anything left
+        blank is skipped. Answers are saved to your profile.</p>
       <form id="answers">${open.map((q) => `
         <div class="question"><p>${esc(q.text)}</p>
           ${q.draft ? `<blockquote class="draft">${esc(q.draft)}</blockquote>
@@ -327,7 +327,7 @@ async function jobPage(id) {
               <button type="button" class="secondary" data-use="${q.id}">Use this answer</button>
               <button type="button" class="link" data-own="${q.id}">Write my own</button>
             </div>`
-          : `<p class="small muted">Your AI found nothing in your profile for this.</p>`}
+          : ""}
           <textarea data-id="${q.id}" data-draft="${esc(q.draft || "")}" aria-label="Your answer: ${esc(q.text)}"
             placeholder="Your answer, or leave blank to skip">${esc(drafts[q.id] || "")}</textarea></div>`).join("")}
         <button class="primary">Send answers</button>
@@ -335,14 +335,15 @@ async function jobPage(id) {
 
     ${job.status === "done" && !isProfile ? `
       <div class="verdict ${res.reached_target ? "" : "short"}">
-        <strong>${res.reached_target ? "Ready to send" : "Best version after 6 rounds"}</strong>
-        <p>ATS ${esc(res.ats?.score)} · review ${esc(res.review?.score)}/10${res.error ? ` · ${esc(res.error)}` : ""}</p>
-        ${res.reached_target ? "" : `<p class="small muted">It didn't reach the target. The reviewer's notes below say what's missing; most of it is experience the job wants that your profile doesn't show.</p>`}
+        <strong>${res.reached_target ? "Ready to send" : `Best version after ${rounds.length} rounds`}</strong>
+        <p>ATS ${esc(res.ats?.score)} · resume ${esc(res.review?.score)}/10 · job fit ${esc(res.review?.fit ?? "?")}/10${res.error ? ` · ${esc(res.error)}` : ""}</p>
+        ${res.reached_target ? "" : `<p class="small muted">It didn't reach the target. The reviewer's notes below say what to fix.</p>`}
+        ${res.review?.fit != null && res.review.fit < 6 ? `<p class="small muted">Job fit is low: the job wants experience your profile doesn't show. A better-written resume can't change that; adding real experience to your profile can.</p>` : ""}
         ${job.has_pdf ? `<a class="primary" href="/api/jobs/${id}/pdf">Download PDF</a>` : ""}
       </div>` : ""}
 
     ${rounds.length ? `<h2>Rounds</h2>
-      <p class="small muted">The dark line on each bar is the pass mark: ATS above 85, review 9 or more.</p>
+      <p class="small muted">The dark line on each bar is the pass mark: ATS above 85, resume 9 or more. Job fit is shown for your information.</p>
       <ol class="rounds">${rounds.map(roundHtml).join("")}</ol>` : ""}
 
     ${job.jd ? `<h2>Job description</h2><div class="jd">${esc(job.jd)}</div>` : ""}`);

@@ -25,7 +25,8 @@ def test_agent_run_with_fakes(tmp_path, monkeypatch):
         def llm(prompt):
             if "hiring manager" in prompt:
                 return json.dumps({"score": 9, "missing_from_profile": ["Used Kubernetes?"]})
-            return CV
+            return json.dumps({"name": "Asha Rao", "contact": {"email": "asha@x.com"},
+                               "projects": [{"name": "Kite", "bullets": ["Built a scheduler"]}]})
         return llm
 
     monkeypatch.setattr(agent, "make_llm", fake_make_llm)

@@ -7,10 +7,10 @@ import logging
 import os
 import sys
 
-from src import ats_scorer, jd_fetcher, profile as profile_mod, sanitizer, tailor, tailor_loop
+from src import ats_scorer, jd_fetcher, profile as profile_mod, tailor, tailor_loop
 from src.file_extractor import extract_text
 from src.llm import make_llm
-from src.pdf_export import export_pdf
+from src.resume_pdf import render_pdf
 
 
 _OPTIONAL_SECTIONS = ("missing section: summary", "missing section: certifications")
@@ -44,10 +44,10 @@ def tailor_job(prof: dict, jd: str, engine: str, reviewer_engine: str | None,
     reviewer = make_llm(reviewer_engine or engine)
     return tailor_loop.run(
         prof, jd,
-        write=lambda p, j, fb, prev: sanitizer.remove_dashes(
-            tailor.write_resume(p, j, writer, fb, prev)),
-        review=lambda p, j, cv, ats: tailor.review_resume(p, j, cv, ats, reviewer),
-        ats=lambda cv, j: local_ats(cv, j, profile_mod.dumps(prof).lower()),
+        write=lambda p, j, fb, prev: tailor.write_resume(p, j, writer, fb, prev),
+        review=lambda p, j, cv, ats: tailor.review_resume(
+            p, j, tailor.resume_to_text(cv), ats, reviewer),
+        ats=lambda cv, j: local_ats(tailor.resume_to_text(cv), j, profile_mod.dumps(prof).lower()),
         ask_gaps=ask_gaps, on_round=on_round,
     )
 
@@ -85,11 +85,12 @@ def cmd_run(a) -> None:
         f.write(profile_mod.dumps(prof))
     with open(a.output + ".rounds.json", "w", encoding="utf-8") as f:
         json.dump(result["rounds"], f, indent=2, ensure_ascii=False)
-    export_pdf(result["resume"], a.output)
+    render_pdf(result["resume"], a.output)
     if result["error"]:
         print(f"\nstopped early, {result['error']}")
     status = "target reached" if result["reached_target"] else "did not reach target"
-    print(f"\n{status}: ATS {result['ats']['score']}, review {result['review']['score']:g}/10")
+    print(f"\n{status}: ATS {result['ats']['score']}, resume {result['review']['score']:g}/10, "
+          f"job fit {result['review'].get('fit', 0):g}/10")
     for note in result["review"]["issues"]:
         print(f"  - {note}")
     print(f"PDF: {os.path.abspath(a.output)}")
