@@ -60,3 +60,20 @@ def test_review_defaults_missing_lists_to_empty():
 def test_write_strips_preamble_fence_and_trailing_notes():
     raw = "HERE IS THE FINISHED CV:\n```\nASHA RAO\nEDUCATION\n```\n**Changes made:** | a | b |"
     assert tailor.write_resume(PROFILE, "jd", _capture(raw)) == "ASHA RAO\nEDUCATION"
+
+
+def test_github_text_accepts_url_and_handle(monkeypatch):
+    urls = []
+
+    class R:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return []
+
+    monkeypatch.setattr(profile.requests, "get", lambda url, **k: urls.append(url) or R())
+    for given in ("https://github.com/Jaswanth-K1210", "github.com/Jaswanth-K1210/",
+                  "@Jaswanth-K1210", "Jaswanth-K1210"):
+        profile.github_text(given)
+    assert set(urls) == {"https://api.github.com/users/Jaswanth-K1210/repos"}

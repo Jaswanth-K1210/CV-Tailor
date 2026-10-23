@@ -33,6 +33,8 @@ certifications [{{name, issuer, date, source}}].
 
 
 def github_text(username: str) -> str:
+    # Accept "https://github.com/user", "github.com/user/", "@user" or "user".
+    username = username.strip().rstrip("/").split("github.com/")[-1].split("/")[0].lstrip("@")
     r = requests.get(f"https://api.github.com/users/{username}/repos",
                      params={"per_page": 100, "sort": "updated"}, timeout=20)
     r.raise_for_status()

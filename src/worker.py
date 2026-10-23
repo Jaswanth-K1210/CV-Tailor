@@ -85,7 +85,11 @@ def handle_job(api, job: dict) -> None:
             gh = sources.pop("github_user", None)
             if gh:
                 api.event("log", {"msg": f"reading GitHub repos of {gh}"})
-                sources["github"] = profile_mod.github_text(gh)
+                try:
+                    sources["github"] = profile_mod.github_text(gh)
+                except Exception as exc:
+                    # GitHub is optional; build the profile from the other sources.
+                    api.event("log", {"msg": f"skipped GitHub ({exc})"})
             api.event("log", {"msg": "merging your sources into a master profile"})
             prof = profile_mod.build_profile(sources, agent.make_llm(job["engine"]))
             api.finish({"ok": True}, profile=prof)

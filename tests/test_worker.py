@@ -89,3 +89,16 @@ def test_ask_returns_partial_answers_after_timeout(monkeypatch):
                         lambda *a, **k: R({"answers": {}, "pending": 1}))
     api = worker.Api("http://s", "t", 1)
     assert api.ask(["Django?"], timeout=0, poll=0) == {}
+
+
+def test_github_failure_does_not_fail_profile(monkeypatch):
+    monkeypatch.setattr(agent, "make_llm", _fake_llm)
+
+    def boom(u):
+        raise RuntimeError("404")
+    monkeypatch.setattr(worker.profile_mod, "github_text", boom)
+    api = FakeApi()
+    worker.handle_job(api, {"id": 4, "kind": "profile", "engine": "claude",
+                            "sources": {"resume": "cv", "github_user": "nobody"}})
+    assert api.finished["profile"]["contact"] == {"name": "Asha"}
+    assert any("GitHub" in d["msg"] for t, d in api.events if t == "log")
