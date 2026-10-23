@@ -29,7 +29,7 @@ def test_agent_run_with_fakes(tmp_path, monkeypatch):
         return llm
 
     monkeypatch.setattr(agent, "make_llm", fake_make_llm)
-    monkeypatch.setattr(agent, "local_ats", lambda text, jd: {"score": 90, "issues": []})
+    monkeypatch.setattr(agent, "local_ats", lambda *a: {"score": 90, "issues": []})
     monkeypatch.setattr("builtins.input", lambda _: "")
     out = tmp_path / "out.pdf"
     agent.main(["run", "--profile", str(prof), "--jd-file", str(jd), "-o", str(out)])
@@ -41,3 +41,11 @@ def test_local_ats_reports_missing_keywords():
     r = agent.local_ats(CV, "Kubernetes Kubernetes Terraform Terraform Python")
     assert isinstance(r["score"], int)
     assert any("missing keywords" in i for i in r["issues"])
+
+
+def test_local_ats_only_suggests_keywords_the_profile_backs():
+    jd = "Apple search results submit resume Kubernetes Kubernetes Python Python"
+    r = agent.local_ats(CV, jd, profile_text='{"skills": ["kubernetes"]}')
+    kw = [i for i in r["issues"] if i.startswith("missing keywords")]
+    assert kw == ["missing keywords: kubernetes"]
+    assert "missing section: summary" not in r["issues"]

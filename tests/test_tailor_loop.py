@@ -32,7 +32,12 @@ def test_stops_when_both_targets_met():
 def test_ats_85_exactly_does_not_pass():
     result, _, _ = _run([85], [{"score": 10}])
     assert result["reached_target"] is False
-    assert len(result["rounds"]) == 6
+
+
+def test_stops_after_two_rounds_without_improvement():
+    result, _, _ = _run([70], [{"score": s} for s in (5, 7, 6, 6, 9)])
+    assert len(result["rounds"]) == 4
+    assert result["resume"] == "cv2"
 
 
 def test_fabrications_block_done():
@@ -42,11 +47,11 @@ def test_fabrications_block_done():
 
 
 def test_caps_at_six_and_returns_best():
-    scores = [{"score": s} for s in (5, 8, 6, 7, 6, 5)]
+    scores = [{"score": s} for s in (4, 5, 6, 7, 8, 7)]
     result, _, _ = _run([90], scores)
     assert len(result["rounds"]) == 6
     assert result["reached_target"] is False
-    assert result["resume"] == "cv2"
+    assert result["resume"] == "cv5"
 
 
 def test_gap_asked_once_and_saved_to_profile():

@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 
 ATS_TARGET = 85      # must be strictly above
 REVIEW_TARGET = 9    # must be at least
+PATIENCE = 2         # stop after this many rounds without beating the best so far
 
 
 def _passes(rnd: dict) -> bool:
@@ -25,6 +26,7 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
     gaps_asked = False
     feedback, previous = "", ""
     error = None
+    best_rank, stale = None, 0
 
     for n in range(1, max_rounds + 1):
         try:
@@ -44,6 +46,15 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
         logger.info("round %d: ATS %s, review %s/10", n, ats_result["score"], rev["score"])
         if _passes(rnd):
             break
+        # More rounds can't add experience the profile lacks; stop when stuck
+        # instead of spending the user's AI quota on all 6.
+        if best_rank is None or _rank(rnd) > best_rank:
+            best_rank, stale = _rank(rnd), 0
+        else:
+            stale += 1
+            if stale >= PATIENCE:
+                logger.info("no improvement for %d rounds; stopping", PATIENCE)
+                break
 
         # ponytail: one round of gap questions per run; the reviewer rewords the
         # same question every round, so text dedupe alone isn't enough.

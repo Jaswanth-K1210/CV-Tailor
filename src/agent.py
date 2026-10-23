@@ -13,12 +13,22 @@ from src.llm import make_llm
 from src.pdf_export import export_pdf
 
 
-def local_ats(text: str, jd: str) -> dict:
+_OPTIONAL_SECTIONS = ("missing section: summary", "missing section: certifications")
+
+
+def local_ats(text: str, jd: str, profile_text: str | None = None) -> dict:
     # ponytail: local estimate until the ResumeWorded scraper lands (Plan 4).
     s = ats_scorer.score_cv(text, jd)
-    issues = list(s["notes"])
-    if s["missing_keywords"]:
-        issues.append("missing keywords: " + ", ".join(s["missing_keywords"][:15]))
+    # Only feed back things the writer can fix honestly: no optional sections it
+    # would have to pad, and only missing keywords the profile actually backs.
+    # (Scraped JDs include page chrome like "apple, search, submit, resume".)
+    issues = [n for n in s["notes"]
+              if not n.startswith("missing keywords") and n not in _OPTIONAL_SECTIONS]
+    missing = s["missing_keywords"]
+    if profile_text is not None:
+        missing = [k for k in missing if k in profile_text]
+    if missing:
+        issues.append("missing keywords: " + ", ".join(missing[:15]))
     return {"score": round(s["score"]), "issues": issues}
 
 
@@ -37,7 +47,8 @@ def tailor_job(prof: dict, jd: str, engine: str, reviewer_engine: str | None,
         write=lambda p, j, fb, prev: sanitizer.remove_dashes(
             tailor.write_resume(p, j, writer, fb, prev)),
         review=lambda p, j, cv, ats: tailor.review_resume(p, j, cv, ats, reviewer),
-        ats=local_ats, ask_gaps=ask_gaps, on_round=on_round,
+        ats=lambda cv, j: local_ats(cv, j, profile_mod.dumps(prof).lower()),
+        ask_gaps=ask_gaps, on_round=on_round,
     )
 
 

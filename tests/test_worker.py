@@ -37,7 +37,7 @@ def _fake_llm(engine, model=None, timeout=300):
 
 def test_handle_tailor_job_reports_rounds_and_finishes(monkeypatch):
     monkeypatch.setattr(agent, "make_llm", _fake_llm)
-    monkeypatch.setattr(agent, "local_ats", lambda t, j: {"score": 90, "issues": []})
+    monkeypatch.setattr(agent, "local_ats", lambda *a: {"score": 90, "issues": []})
     api = FakeApi()
     worker.handle_job(api, {"id": 1, "kind": "tailor", "jd": "Python dev", "job_url": None,
                             "engine": "claude", "profile": {"contact": {"name": "Asha"}}})
@@ -107,7 +107,7 @@ def test_gap_questions_are_sent_with_ai_drafts(monkeypatch):
         return llm
 
     monkeypatch.setattr(agent, "make_llm", llm_factory)
-    monkeypatch.setattr(agent, "local_ats", lambda t, j: {"score": 90, "issues": []})
+    monkeypatch.setattr(agent, "local_ats", lambda *a: {"score": 90, "issues": []})
     api = FakeApi()
     worker.handle_job(api, {"id": 5, "kind": "tailor", "jd": "Python dev", "job_url": None,
                             "engine": "claude", "profile": {"contact": {"name": "Asha"}}})
