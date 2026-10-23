@@ -59,7 +59,7 @@ Return ONLY JSON: {{"score": number, "fit": number, "issues": [str], "fabricatio
 "missing_from_profile": [str]}}
 
 ATS CHECK RESULT: score {ats_score}/100. Issues: {ats_issues}
-
+{requested}
 JOB DESCRIPTION:
 {jd}
 
@@ -87,7 +87,8 @@ def write_resume(profile: dict, jd: str, llm, feedback: str = "",
                  previous: dict | None = None) -> dict:
     r = ask_json(llm, _WRITE_PROMPT.format(
         jd=jd, profile=dumps(profile),
-        feedback=f"\nFIX THESE PROBLEMS FROM THE LAST DRAFT:\n{feedback}\n" if feedback else "",
+        feedback=(f"\nThis is a revision. EDIT the LAST DRAFT: apply every fix below and keep "
+                  f"everything else exactly as it is.\nFIXES:\n{feedback}\n") if feedback else "",
         previous=f"\nLAST DRAFT (JSON):\n{json.dumps(previous, ensure_ascii=False)}" if previous else "",
     ), "write")
     r = _clean(r)
@@ -130,8 +131,12 @@ def _score(raw) -> float:
     return float(m.group()) if m else 0.0
 
 
-def review_resume(profile: dict, jd: str, resume: str, ats: dict, llm) -> dict:
+def review_resume(profile: dict, jd: str, resume: str, ats: dict, llm,
+                  requested: str = "") -> dict:
     r = ask_json(llm, _REVIEW_PROMPT.format(
+        requested=(f"\nFIXES REQUESTED IN THE LAST REVIEW (credit the ones this draft made; only "
+                   f"raise a new issue if it is significant, not to replace a fixed nitpick):\n"
+                   f"{requested}\n") if requested else "",
         ats_score=ats.get("score", "?"), ats_issues="; ".join(ats.get("issues", [])) or "none",
         jd=jd, profile=dumps(profile), resume=resume,
     ), "review")

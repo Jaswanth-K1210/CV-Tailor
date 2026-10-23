@@ -54,8 +54,8 @@ def tailor_job(prof: dict, jd: str, engine: str, reviewer_engine: str | None,
     return tailor_loop.run(
         prof, jd,
         write=lambda p, j, fb, prev: tailor.write_resume(p, j, writer, fb, prev),
-        review=lambda p, j, cv, ats: tailor.review_resume(
-            p, j, tailor.resume_to_text(cv), ats, reviewer),
+        review=lambda p, j, cv, ats, fb: tailor.review_resume(
+            p, j, tailor.resume_to_text(cv), ats, reviewer, requested=fb),
         ats=lambda cv, j: local_ats(tailor.resume_to_text(cv), j, _evidence_text(prof)),
         ask_gaps=ask_gaps, on_round=on_round,
     )

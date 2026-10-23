@@ -11,7 +11,7 @@ def _run(ats_scores, reviews, ask_gaps=lambda qs: {}, profile=None):
     def ats(text, jd):
         return {"score": ats_scores[min(calls["i"], len(ats_scores) - 1)], "issues": ["ats issue"]}
 
-    def review(profile, jd, resume, ats_result):
+    def review(profile, jd, resume, ats_result, requested=""):
         r = reviews[min(calls["i"], len(reviews) - 1)]
         calls["i"] += 1
         return {"score": 0, "issues": [], "fabrications": [], "missing_from_profile": [], **r}
@@ -95,7 +95,7 @@ def test_failed_later_round_keeps_best_so_far():
         return "cv1"
 
     result = run({}, "jd", write=write, ats=lambda t, j: {"score": 70, "issues": []},
-                 review=lambda p, j, r, a: {"score": 6, "issues": [], "fabrications": [],
+                 review=lambda p, j, r, a, fb: {"score": 6, "issues": [], "fabrications": [],
                                             "missing_from_profile": []},
                  ask_gaps=lambda qs: {})
     assert result["resume"] == "cv1"
@@ -115,7 +115,20 @@ def test_revises_best_draft_not_last():
 
     scores = iter([7, 8, 6, 9])
     run({}, "jd", write=write, ats=lambda t, j: {"score": 90, "issues": []},
-        review=lambda p, j, r, a: {"score": next(scores), "issues": [f"fix {r}"],
+        review=lambda p, j, r, a, fb: {"score": next(scores), "issues": [f"fix {r}"],
                                    "fabrications": [], "missing_from_profile": []},
         ask_gaps=lambda qs: {})
     assert seen == ["", "cv1", "cv2", "cv2"]
+
+
+def test_reviewer_gets_the_fixes_requested_for_this_draft():
+    got = []
+
+    def review(p, j, r, a, requested):
+        got.append(requested)
+        return {"score": 8 if r == "cv1" else 9, "issues": ["cut TrafficCam"],
+                "fabrications": [], "missing_from_profile": []}
+
+    run({}, "jd", write=lambda p, j, fb, prev: f"cv{len(got) + 1}",
+        ats=lambda t, j: {"score": 90, "issues": []}, review=review, ask_gaps=lambda qs: {})
+    assert got == ["", "Reviewer: cut TrafficCam"]

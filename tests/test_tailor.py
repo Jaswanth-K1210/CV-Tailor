@@ -98,3 +98,9 @@ def test_github_text_accepts_url_and_handle(monkeypatch):
                   "@Jaswanth-K1210", "Jaswanth-K1210"):
         profile.github_text(given)
     assert set(urls) == {"https://api.github.com/users/Jaswanth-K1210/repos"}
+
+
+def test_review_prompt_lists_requested_fixes():
+    llm = _capture('{"score": 9}')
+    tailor.review_resume(PROFILE, "jd", "cv", {"score": 80}, llm, requested="Reviewer: cut X")
+    assert "FIXES REQUESTED IN THE LAST REVIEW" in llm.seen[0] and "cut X" in llm.seen[0]

@@ -32,7 +32,7 @@ def run(profile: dict, jd: str, *, write, review, ats, ask_gaps,
         try:
             resume = write(profile, jd, feedback, previous)
             ats_result = ats(resume, jd)
-            rev = review(profile, jd, resume, ats_result)
+            rev = review(profile, jd, resume, ats_result, feedback)
         except Exception as exc:
             if not rounds:
                 raise
